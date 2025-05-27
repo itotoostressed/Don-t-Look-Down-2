@@ -4,71 +4,88 @@ extends Node3D
 var platformScene = load("res://platform.tscn")
 
 # Configuration variables
-var platform_count = 20          # Total number of platforms to spawn
-var min_x_distance = 2.0         # Minimum horizontal distance between platforms
-var max_x_distance = 6.0         # Maximum horizontal distance
-var min_z_distance = -3.0        # Minimum depth variation
-var max_z_distance = 3.0         # Maximum depth variation
-var min_y_increase = 1.0         # Minimum vertical increase
-var max_y_increase = 3.0         # Maximum vertical increase
-var no_overlap_radius = 2.5      # Vertical range where platforms shouldn't overlap
+var platform_count = 30
+var min_x_distance = -4.0
+var max_x_distance = 4.0
+var min_z_distance = -6.0
+var max_z_distance = 6.0
+var min_y_increase = 2.5
+var max_y_increase = 2.5
+var no_overlap_radius = 4.5
+var platform_half_width = 1.5  # Half of platform's X dimension
+var platform_half_depth = 1.5  # Half of platform's Z dimension
 
 func _ready():
-	var last_position = Vector3.ZERO  # Start from origin
-	var platform_positions = []       # Track all platform positions
+	var last_position = Vector3.ZERO
+	var platform_positions = []
 	
 	for i in range(platform_count):
 		var platform_instance = platformScene.instantiate()
 		var new_position = Vector3.ZERO
 		var valid_position_found = false
 		
-		# Try to find a valid position
 		for attempt in range(platform_count):
 			# Calculate random offsets
 			var x_offset = randf_range(min_x_distance, max_x_distance)
 			var z_offset = randf_range(min_z_distance, max_z_distance)
 			var y_increase = randf_range(min_y_increase, max_y_increase)
 			
-			# Randomly decide if platform goes left or right
 			if randf() > 0.5:
 				x_offset = -x_offset
 			
-			# Calculate candidate position
 			new_position = Vector3(
 				last_position.x + x_offset,
 				last_position.y + y_increase,
 				last_position.z + z_offset
 			)
 			
-			# Check if this position overlaps with any existing platform
 			if not _position_overlaps(new_position, platform_positions):
 				valid_position_found = true
 				break
 		
-		# If we couldn't find a valid position, just use the last attempt
 		if not valid_position_found:
 			print("Warning: Couldn't find non-overlapping position after ", platform_count, " attempts")
 		
 		platform_instance.position = new_position
 		add_child(platform_instance)
 		
-		# Update tracking variables
-		platform_positions.append(new_position)
+		platform_positions.append({
+			"position": new_position,
+			"half_width": platform_half_width,
+			"half_depth": platform_half_depth
+		})
 		last_position = new_position
 
-# Helper function to check if a position overlaps with existing platforms
-func _position_overlaps(position: Vector3, existing_positions: Array) -> bool:
-	for existing_pos in existing_positions:
-		# Calculate horizontal distance (ignore Y-axis for this check)
-		var horizontal_dist = Vector2(position.x, position.z).distance_to(
-			Vector2(existing_pos.x, existing_pos.z)
+func _position_overlaps(position: Vector3, existing_platforms: Array) -> bool:
+	# Create bounding box for new platform
+	var new_min = Vector3(
+		position.x - platform_half_width,
+		position.y - no_overlap_radius/2,
+		position.z - platform_half_depth
+	)
+	var new_max = Vector3(
+		position.x + platform_half_width,
+		position.y + no_overlap_radius/2,
+		position.z + platform_half_depth
+	)
+	
+	for existing in existing_platforms:
+		# Create bounding box for existing platform
+		var existing_min = Vector3(
+			existing.position.x - existing.half_width,
+			existing.position.y - no_overlap_radius/2,
+			existing.position.z - existing.half_depth
+		)
+		var existing_max = Vector3(
+			existing.position.x + existing.half_width,
+			existing.position.y + no_overlap_radius/2,
+			existing.position.z + existing.half_depth
 		)
 		
-		# Check vertical range
-		var vertical_diff = abs(position.y - existing_pos.y)
-		
-		# Platforms are too close both horizontally and vertically
-		if horizontal_dist < min_x_distance && vertical_diff < no_overlap_radius:
+		# Check for AABB overlap
+		if (new_min.x < existing_max.x && new_max.x > existing_min.x &&
+			new_min.y < existing_max.y && new_max.y > existing_min.y &&
+			new_min.z < existing_max.z && new_max.z > existing_min.z):
 			return true
 	
 	return false

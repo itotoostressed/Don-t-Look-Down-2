@@ -33,7 +33,7 @@ transform = Transform3D(-0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, 0.75
 shadow_enabled = true
 
 [node name="Player" parent="." instance=ExtResource("1_wijl4")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.318983, 1.03759, 0.273356)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 
 [node name="Map Builder" type="CSGCombiner3D" parent="."]
 use_collision = true
@@ -43,6 +43,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.569, 2.81267, -6.04848)
 visible = false
 
 [node name="floor" type="CSGBox3D" parent="Map Builder"]
-transform = Transform3D(34.9524, 0, 0, 0, 34.9524, 0, 0, 0, 34.9524, -0.144648, 0.0251117, 0.0142641)
+transform = Transform3D(55.5458, 0, 0, 0, 55.5458, 0, 0, 0, 55.5458, 0, 0, 0)
 size = Vector3(1, 0.001, 1)
 material = SubResource("StandardMaterial3D_71pa8")

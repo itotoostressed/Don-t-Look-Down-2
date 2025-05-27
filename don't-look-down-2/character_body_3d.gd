@@ -4,7 +4,7 @@ var numJumps = 0
 var maxJumps = 2
 const SENSITIVITY = 0.01
 const SPEED = 5.0
-const JUMP_VELOCITY = 6.5
+const JUMP_VELOCITY = 5.5
 
 @onready var head = $Head
 @onready var camera = $Head/Camera3D

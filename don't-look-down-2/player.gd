@@ -59,3 +59,4 @@ func _physics_process(delta: float) -> void:
 func _on_lava_body_entered(body: Node3D) -> void:
 	if body.is_in_group("players"):
 		print("player died!")
+		get_tree().change_scene_to_file("res://death_screen.tscn")

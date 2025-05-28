@@ -1,6 +1,7 @@
 extends Node3D
 
 @onready var player = $Player
+@onready var lava = $lava
 var platformScene = load("res://platform.tscn")
 
 # Configuration variables
@@ -14,6 +15,9 @@ var max_y_increase = 2.5
 var no_overlap_radius = 4.5
 var platform_half_width = 1.5  # Half of platform's X dimension
 var platform_half_depth = 1.5  # Half of platform's Z dimension
+
+func _process(delta: float) -> void:
+	lava.rise()
 
 func _ready():
 	var last_position = Vector3.ZERO
@@ -89,3 +93,7 @@ func _position_overlaps(position: Vector3, existing_platforms: Array) -> bool:
 			return true
 	
 	return false
+
+
+func _on_lava_body_entered(body: Node3D) -> void:
+	pass # Replace with function body.

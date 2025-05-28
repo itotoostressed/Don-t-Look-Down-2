@@ -6,6 +6,10 @@ var platformScene = load("res://platform.tscn")
 
 # Configuration variables
 var platform_count = 30
+var max_x_pos = 50
+var max_z_pos = 50
+var min_x_pos = 0    # Added minimum bounds
+var min_z_pos = 0    # Added minimum bounds
 var min_x_distance = -4.0
 var max_x_distance = 4.0
 var min_z_distance = -6.0
@@ -28,7 +32,7 @@ func _ready():
 		var new_position = Vector3.ZERO
 		var valid_position_found = false
 		
-		for attempt in range(platform_count):
+		for attempt in range(platform_count * 2):  # Increased attempts since we have more constraints
 			# Calculate random offsets
 			var x_offset = randf_range(min_x_distance, max_x_distance)
 			var z_offset = randf_range(min_z_distance, max_z_distance)
@@ -43,12 +47,15 @@ func _ready():
 				last_position.z + z_offset
 			)
 			
-			if not _position_overlaps(new_position, platform_positions):
+			# Check if position is within bounds
+			if _position_within_bounds(new_position) and not _position_overlaps(new_position, platform_positions):
 				valid_position_found = true
 				break
 		
 		if not valid_position_found:
-			print("Warning: Couldn't find non-overlapping position after ", platform_count, " attempts")
+			print("Warning: Couldn't find valid position after ", platform_count * 2, " attempts")
+			# If we can't find a valid position, try to place it within bounds anyway
+			new_position = _clamp_position_to_bounds(new_position)
 		
 		platform_instance.position = new_position
 		add_child(platform_instance)
@@ -59,6 +66,32 @@ func _ready():
 			"half_depth": platform_half_depth
 		})
 		last_position = new_position
+
+func _position_within_bounds(position: Vector3) -> bool:
+	# Check if the platform (including its size) stays within bounds
+	var platform_min_x = position.x - platform_half_width
+	var platform_max_x = position.x + platform_half_width
+	var platform_min_z = position.z - platform_half_depth
+	var platform_max_z = position.z + platform_half_depth
+	
+	return (platform_min_x >= min_x_pos and platform_max_x <= max_x_pos and
+			platform_min_z >= min_z_pos and platform_max_z <= max_z_pos)
+
+func _clamp_position_to_bounds(position: Vector3) -> Vector3:
+	# Clamp the position to ensure the platform stays within bounds
+	var clamped_position = position
+	
+	# Clamp X position
+	clamped_position.x = clamp(position.x, 
+		min_x_pos + platform_half_width, 
+		max_x_pos - platform_half_width)
+	
+	# Clamp Z position
+	clamped_position.z = clamp(position.z, 
+		min_z_pos + platform_half_depth, 
+		max_z_pos - platform_half_depth)
+	
+	return clamped_position
 
 func _position_overlaps(position: Vector3, existing_platforms: Array) -> bool:
 	# Create bounding box for new platform
@@ -93,7 +126,6 @@ func _position_overlaps(position: Vector3, existing_platforms: Array) -> bool:
 			return true
 	
 	return false
-
 
 func _on_lava_body_entered(body: Node3D) -> void:
 	pass # Replace with function body.

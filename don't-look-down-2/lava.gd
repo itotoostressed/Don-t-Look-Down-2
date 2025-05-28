@@ -7,4 +7,4 @@ func _process(delta: float) -> void:
 	pass
 
 func rise():
-	global_position.y += 1
+	global_position.y += .03

@@ -24,48 +24,9 @@ func _process(delta: float) -> void:
 	lava.rise()
 
 func _ready():
-	var last_position = Vector3.ZERO
-	var platform_positions = []
+	generate_platforms()
 	
-	for i in range(platform_count):
-		var platform_instance = platformScene.instantiate()
-		var new_position = Vector3.ZERO
-		var valid_position_found = false
-		
-		for attempt in range(platform_count * 2):  # Increased attempts since we have more constraints
-			# Calculate random offsets
-			var x_offset = randf_range(min_x_distance, max_x_distance)
-			var z_offset = randf_range(min_z_distance, max_z_distance)
-			var y_increase = randf_range(min_y_increase, max_y_increase)
-			
-			if randf() > 0.5:
-				x_offset = -x_offset
-			
-			new_position = Vector3(
-				last_position.x + x_offset,
-				last_position.y + y_increase,
-				last_position.z + z_offset
-			)
-			
-			# Check if position is within bounds
-			if _position_within_bounds(new_position) and not _position_overlaps(new_position, platform_positions):
-				valid_position_found = true
-				break
-		
-		if not valid_position_found:
-			print("Warning: Couldn't find valid position after ", platform_count * 2, " attempts")
-			# If we can't find a valid position, try to place it within bounds anyway
-			new_position = _clamp_position_to_bounds(new_position)
-		
-		platform_instance.position = new_position
-		add_child(platform_instance)
-		
-		platform_positions.append({
-			"position": new_position,
-			"half_width": platform_half_width,
-			"half_depth": platform_half_depth
-		})
-		last_position = new_position
+	
 
 func _position_within_bounds(position: Vector3) -> bool:
 	# Check if the platform (including its size) stays within bounds
@@ -126,6 +87,66 @@ func _position_overlaps(position: Vector3, existing_platforms: Array) -> bool:
 			return true
 	
 	return false
+
+
+func generate_platforms():
+	
+	var last_position = Vector3.ZERO
+	var platform_positions = []
+	
+	for i in range(platform_count):
+		var platform_instance = platformScene.instantiate()
+		var new_position = Vector3.ZERO
+		var valid_position_found = false
+		
+		for attempt in range(platform_count * 2):  # Increased attempts since we have more constraints
+			# Calculate random offsets
+			var x_offset = randf_range(min_x_distance, max_x_distance)
+			var z_offset = randf_range(min_z_distance, max_z_distance)
+			var y_increase = randf_range(min_y_increase, max_y_increase)
+			
+			if randf() > 0.5:
+				x_offset = -x_offset
+			
+			new_position = Vector3(
+				last_position.x + x_offset,
+				last_position.y + y_increase,
+				last_position.z + z_offset
+			)
+			
+			# Check if position is within bounds
+			if _position_within_bounds(new_position) and not _position_overlaps(new_position, platform_positions):
+				valid_position_found = true
+				break
+		
+		if not valid_position_found:
+			print("Warning: Couldn't find valid position after ", platform_count * 2, " attempts")
+			# If we can't find a valid position, try to place it within bounds anyway
+			new_position = _clamp_position_to_bounds(new_position)
+		
+		platform_instance.position = new_position
+		
+		
+		# change properties
+		var platformType = randi() % 2 # 0-3 inclusive
+		
+		const REGULAR = 0
+		var ICE_TEXTURE = load("res://ice_texture.tres")
+		const ICE_PLATFORM = 1
+		if(platformType == REGULAR):
+			platform_instance.add_to_group("platform")
+		if (platformType == ICE_PLATFORM):
+			platform_instance.get_node("texture").material_override = ICE_TEXTURE
+			platform_instance.add_to_group("ice")
+		# instantiate platform
+		add_child(platform_instance)
+		
+		platform_positions.append({
+			"position": new_position,
+			"half_width": platform_half_width,
+			"half_depth": platform_half_depth
+		})
+		last_position = new_position
 
 func _on_lava_body_entered(body: Node3D) -> void:
 	pass # Replace with function body.

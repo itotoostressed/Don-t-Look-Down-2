@@ -43,11 +43,9 @@ func _physics_process(delta: float) -> void:
 			if floor_body:
 				#print("in floor")
 				if floor_body.is_in_group("ice"):
-					print("we got ice!!!s")
 					FRICTION = 0
 				elif floor_body.is_in_group("platform"):
 					FRICTION = 1
-					print("rizzy bear")
 				else:
 					FRICTION = SPEED  # Default
 	# Jumping

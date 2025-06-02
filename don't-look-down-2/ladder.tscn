@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3 uid="uid://cuofobr4mhqoo"]
+
+[ext_resource type="PackedScene" uid="uid://c52lu5uvoiumv" path="res://ladder/scene.gltf" id="1_cq4ai"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_cq4ai"]
+size = Vector3(0.2, 7.85, 0.8)
+
+[node name="Ladder" groups=["ladder"] instance=ExtResource("1_cq4ai")]
+
+[node name="f08dcaa7e13e45baa3c2de2d667404d4_fbx" parent="Sketchfab_model" index="0"]
+transform = Transform3D(0.01, 0, 0, 0, -8.74228e-10, -0.01, 0, 0.02, -4.37114e-10, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." index="1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.000976563, 0, 0)
+shape = SubResource("BoxShape3D_cq4ai")

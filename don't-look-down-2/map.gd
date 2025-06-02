@@ -21,7 +21,8 @@ var platform_half_width = 1.5  # Half of platform's X dimension
 var platform_half_depth = 1.5  # Half of platform's Z dimension
 
 func _process(delta: float) -> void:
-	lava.rise()
+	#lava.rise()
+	pass
 
 func _ready():
 	generate_platforms()
@@ -132,8 +133,10 @@ func generate_platforms():
 		
 		const REGULAR = 0
 		var ICE_TEXTURE = load("res://ice_texture.tres")
+		var NORMAL_TEXTURE = load("res://wood.tres")
 		const ICE_PLATFORM = 1
 		if(platformType == REGULAR):
+			platform_instance.get_node("texture").material_override = NORMAL_TEXTURE
 			platform_instance.add_to_group("platform")
 		if (platformType == ICE_PLATFORM):
 			platform_instance.get_node("texture").material_override = ICE_TEXTURE

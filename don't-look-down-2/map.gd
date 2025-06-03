@@ -3,31 +3,78 @@ extends Node3D
 @onready var player = $Player
 @onready var lava = $lava
 var platformScene = load("res://platform.tscn")
+var ladderScene = load("res://ladder.tscn") # Make sure to load your ladder scene
 
 # Configuration variables
 var platform_count = 30
 var max_x_pos = 50
 var max_z_pos = 50
-var min_x_pos = 0    # Added minimum bounds
-var min_z_pos = 0    # Added minimum bounds
+var min_x_pos = 0
+var min_z_pos = 0
 var min_x_distance = -4.0
 var max_x_distance = 4.0
 var min_z_distance = -6.0
 var max_z_distance = 6.0
-var min_y_increase = 2.5
-var max_y_increase = 2.5
+var min_y_increase = 1.5  # Smaller minimum step
+var max_y_increase = 8.0  # Larger maximum step
 var no_overlap_radius = 4.5
-var platform_half_width = 1.5  # Half of platform's X dimension
-var platform_half_depth = 1.5  # Half of platform's Z dimension
-
-func _process(delta: float) -> void:
-	#lava.rise()
-	pass
+var platform_half_width = 1.5
+var platform_half_depth = 1.5
+const LADDER_HEIGHT = 7.85 # Your ladder height
 
 func _ready():
 	generate_platforms()
+	await get_tree().create_timer(0.1).timeout
+	generate_ladders()
+
+func generate_ladders():
+	var platforms = get_tree().get_nodes_in_group("platform") + get_tree().get_nodes_in_group("ice")
+	var ladders_placed = 0
 	
+	# Sort platforms by height
+	platforms.sort_custom(func(a, b): return a.global_position.y < b.global_position.y)
 	
+	if platforms.size() < 2:
+		print("Not enough platforms for ladders!")
+		return
+	
+	for i in range(platforms.size() - 1):
+		var lower_platform = platforms[i]
+		var upper_platform = platforms[i + 1]
+		var height_diff = upper_platform.global_position.y - lower_platform.global_position.y
+		
+		if height_diff >= 2.5 and height_diff <= LADDER_HEIGHT * 1.2:
+			# Calculate direction between platforms
+			var direction = (upper_platform.global_position - lower_platform.global_position).normalized()
+			
+			# Position at edge of lower platform with vertical offset
+			var ladder_pos = lower_platform.global_position + (direction * platform_half_width * 1.5)
+			
+			# Adjust for the halfway-into-ground offset (3.925m)
+			var vertical_offset = LADDER_HEIGHT / 2  # 3.925m
+			ladder_pos.y += vertical_offset  # Move up by half the ladder height
+			
+			# Create and position ladder
+			var ladder = ladderScene.instantiate()
+			ladder.global_position = ladder_pos
+			
+			# Rotate to face upper platform
+			ladder.look_at(upper_platform.global_position, Vector3.UP)
+			
+			# Scale ladder to match height difference
+			var scale_factor = height_diff / LADDER_HEIGHT
+			ladder.scale.y = scale_factor
+			
+			# Apply the same offset to the scaled ladder
+			ladder.position.y -= vertical_offset * (1 - scale_factor)
+			
+			add_child(ladder)
+			ladders_placed += 1
+			
+			print("Placed ladder between platforms (adjusted by 3.925m)")
+			
+			if ladders_placed >= platform_count / 4:
+				break
 
 func _position_within_bounds(position: Vector3) -> bool:
 	# Check if the platform (including its size) stays within bounds
@@ -89,9 +136,7 @@ func _position_overlaps(position: Vector3, existing_platforms: Array) -> bool:
 	
 	return false
 
-
 func generate_platforms():
-	
 	var last_position = Vector3.ZERO
 	var platform_positions = []
 	
@@ -126,7 +171,6 @@ func generate_platforms():
 			new_position = _clamp_position_to_bounds(new_position)
 		
 		platform_instance.position = new_position
-		
 		
 		# change properties
 		var platformType = randi() % 2 # 0-3 inclusive

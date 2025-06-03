@@ -43,35 +43,37 @@ func generate_ladders():
 		var upper_platform = platforms[i + 1]
 		var height_diff = upper_platform.global_position.y - lower_platform.global_position.y
 		
-		if height_diff >= 2.5 and height_diff <= LADDER_HEIGHT * 1.2:
+		if height_diff >= 2.5 and height_diff <= LADDER_HEIGHT * 1.3:
 			# Calculate direction between platforms
-			var direction = (upper_platform.global_position - lower_platform.global_position).normalized()
-			
-			# Position at edge of lower platform with vertical offset
-			var ladder_pos = lower_platform.global_position + (direction * platform_half_width * 1.5)
-			
-			# Adjust for the halfway-into-ground offset (3.925m)
-			var vertical_offset = LADDER_HEIGHT / 2  # 3.925m
-			ladder_pos.y += vertical_offset  # Move up by half the ladder height
+			#var direction = (upper_platform.global_position - lower_platform.global_position).normalized()
+			#
+			## Position at edge of lower platform with vertical offset
+			#var ladder_pos = lower_platform.global_position + (direction * platform_half_width * 1.5)
+			#
+			#
+			## Adjust for the halfway-into-ground offset (3.925m)
+			#var vertical_offset = LADDER_HEIGHT / 2  # 3.925m
+			#ladder_pos.y += vertical_offset  # Move up by half the ladder height
+			#var ladder_pos = 
 			
 			# Create and position ladder
 			var ladder = ladderScene.instantiate()
-			ladder.global_position = ladder_pos
-			
+			ladder.global_position += Vector3(2,3.925,0) + lower_platform.global_position
+			print(ladder.global_position)
 			# Rotate to face upper platform
 			ladder.look_at(upper_platform.global_position, Vector3.UP)
 			
-			# Scale ladder to match height difference
-			var scale_factor = height_diff / LADDER_HEIGHT
-			ladder.scale.y = scale_factor
+			## Scale ladder to match height difference
+			#var scale_factor = height_diff / LADDER_HEIGHT
+			#ladder.scale.y = scale_factor
 			
-			# Apply the same offset to the scaled ladder
-			ladder.position.y -= vertical_offset * (1 - scale_factor)
+			## Apply the same offset to the scaled ladder
+			#ladder.position.y -= vertical_offset * (1 - scale_factor)
 			
 			add_child(ladder)
 			ladders_placed += 1
 			
-			print("Placed ladder between platforms (adjusted by 3.925m)")
+			#print("Placed ladder between platforms (adjusted by 3.925m)")
 			
 			if ladders_placed >= platform_count / 4:
 				break
@@ -103,41 +105,41 @@ func _clamp_position_to_bounds(position: Vector3) -> Vector3:
 	return clamped_position
 
 func _position_overlaps(position: Vector3, existing_platforms: Array) -> bool:
-	# Create bounding box for new platform
+	# Create bounding box for new platform with full platform dimensions
 	var new_min = Vector3(
 		position.x - platform_half_width,
-		position.y - no_overlap_radius/2,
+		position.y - 2.0, # Height buffer below platform
 		position.z - platform_half_depth
 	)
 	var new_max = Vector3(
 		position.x + platform_half_width,
-		position.y + no_overlap_radius/2,
+		position.y + 2.0, # Height buffer above platform
 		position.z + platform_half_depth
 	)
 	
 	for existing in existing_platforms:
-		# Create bounding box for existing platform
+		# Create bounding box for existing platform with same dimensions
 		var existing_min = Vector3(
-			existing.position.x - existing.half_width,
-			existing.position.y - no_overlap_radius/2,
-			existing.position.z - existing.half_depth
+			existing.position.x - platform_half_width,
+			existing.position.y - 2.0, # Height buffer below platform
+			existing.position.z - platform_half_depth
 		)
 		var existing_max = Vector3(
-			existing.position.x + existing.half_width,
-			existing.position.y + no_overlap_radius/2,
-			existing.position.z + existing.half_depth
+			existing.position.x + platform_half_width,
+			existing.position.y + 2.0, # Height buffer above platform
+			existing.position.z + platform_half_depth
 		)
 		
-		# Check for AABB overlap
-		if (new_min.x < existing_max.x && new_max.x > existing_min.x &&
-			new_min.y < existing_max.y && new_max.y > existing_min.y &&
-			new_min.z < existing_max.z && new_max.z > existing_min.z):
+		# Check for AABB overlap using full platform dimensions
+		if (new_min.x <= existing_max.x && new_max.x >= existing_min.x &&
+			new_min.y <= existing_max.y && new_max.y >= existing_min.y &&
+			new_min.z <= existing_max.z && new_max.z >= existing_min.z):
 			return true
 	
 	return false
 
 func generate_platforms():
-	var last_position = Vector3.ZERO
+	var last_position = Vector3(0, -2.5, 0)  # Set initial platform at y=2 instead of y=0
 	var platform_positions = []
 	
 	for i in range(platform_count):
@@ -146,10 +148,13 @@ func generate_platforms():
 		var valid_position_found = false
 		
 		for attempt in range(platform_count * 2):  # Increased attempts since we have more constraints
-			# Calculate random offsets
 			var x_offset = randf_range(min_x_distance, max_x_distance)
 			var z_offset = randf_range(min_z_distance, max_z_distance)
 			var y_increase = randf_range(min_y_increase, max_y_increase)
+			# Calculate random offsets
+			if (i == 0):
+				y_increase = 3
+			
 			
 			if randf() > 0.5:
 				x_offset = -x_offset

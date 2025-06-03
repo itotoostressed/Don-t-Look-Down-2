@@ -1,6 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://uqx4nqtnn532"]
-
-[ext_resource type="PackedScene" uid="uid://cuofobr4mhqoo" path="res://ladder.tscn" id="1_mi635"]
+[gd_scene load_steps=4 format=3 uid="uid://uqx4nqtnn532"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_5ajho"]
 friction = 0.0
@@ -20,6 +18,3 @@ mesh = SubResource("BoxMesh_5ajho")
 [node name="collision" type="CollisionShape3D" parent="."]
 transform = Transform3D(4.60109, 0, 0, 0, 0.16355, 0, 0, 0, 4.60109, 0, 0, 0)
 shape = SubResource("ConvexPolygonShape3D_5ajho")
-
-[node name="Ladder" parent="." instance=ExtResource("1_mi635")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.98149, 3.86336, -1.78621)

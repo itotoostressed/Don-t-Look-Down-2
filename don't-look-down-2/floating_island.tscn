@@ -1,0 +1,8 @@
+[gd_scene load_steps=3 format=3 uid="uid://437v5b404pog"]
+
+[ext_resource type="PackedScene" uid="uid://bxo6rmniff7l0" path="res://floating_island.glb" id="1_kndjl"]
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_wclb3"]
+
+[node name="floating_island" instance=ExtResource("1_kndjl")]
+physics_material_override = SubResource("PhysicsMaterial_wclb3")

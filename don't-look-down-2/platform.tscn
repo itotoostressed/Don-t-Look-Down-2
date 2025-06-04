@@ -5,8 +5,8 @@ friction = 0.0
 
 [sub_resource type="BoxMesh" id="BoxMesh_5ajho"]
 
-[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_5ajho"]
-points = PackedVector3Array(-0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5)
+[sub_resource type="BoxShape3D" id="BoxShape3D_5ajho"]
+size = Vector3(4, 0.142, 1)
 
 [node name="Platform" type="StaticBody3D"]
 physics_material_override = SubResource("PhysicsMaterial_5ajho")
@@ -17,4 +17,4 @@ mesh = SubResource("BoxMesh_5ajho")
 
 [node name="collision" type="CollisionShape3D" parent="."]
 transform = Transform3D(3.99973, 0, 0, 0, 0.142174, 0, 0, 0, 3.99973, 0, 0, 0)
-shape = SubResource("ConvexPolygonShape3D_5ajho")
+shape = SubResource("BoxShape3D_5ajho")

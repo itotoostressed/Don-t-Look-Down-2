@@ -1,10 +1,10 @@
 extends CharacterBody3D
 
 var numJumps = 0
-var maxJumps = 999999
+var maxJumps = 2
 const SENSITIVITY = 0.01
 const SPEED = 7.0
-const JUMP_VELOCITY = 10
+const JUMP_VELOCITY = 6
 const LADDER_CLIMB_SPEED = 4.0  # Speed when climbing ladders
 
 var FRICTION = 0.1

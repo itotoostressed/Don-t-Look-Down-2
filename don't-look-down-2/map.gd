@@ -11,7 +11,7 @@ var max_x_pos = 50
 var max_z_pos = 50
 var min_x_pos = 0
 var min_z_pos = 0
-var min_y_increase = 1.5
+var min_y_increase = 8
 var max_y_increase = 8.0
 var no_overlap_radius = 4.5
 var platform_half_width = 1.5
@@ -85,7 +85,7 @@ func _clamp_position_to_bounds(position: Vector3) -> Vector3:
 	return clamped_position
 
 func _position_overlaps(position: Vector3, existing_platforms: Array) -> bool:
-	# Create bounding box for new platform with base dimensions
+	# Create bounding box for new platform with full platform dimensions
 	var new_min = Vector3(
 		position.x - platform_half_width,
 		position.y - 2.0,
@@ -98,19 +98,19 @@ func _position_overlaps(position: Vector3, existing_platforms: Array) -> bool:
 	)
 	
 	for existing in existing_platforms:
-		# Create bounding box for existing platform using stored dimensions
+		# Create bounding box for existing platform with same dimensions
 		var existing_min = Vector3(
-			existing.position.x - existing.half_width,
+			existing.position.x - platform_half_width,
 			existing.position.y - 2.0,
-			existing.position.z - existing.half_depth
+			existing.position.z - platform_half_depth
 		)
 		var existing_max = Vector3(
-			existing.position.x + existing.half_width,
+			existing.position.x + platform_half_width,
 			existing.position.y + 2.0,
-			existing.position.z + existing.half_depth
+			existing.position.z + platform_half_depth
 		)
 		
-		# Check for AABB overlap using actual platform dimensions
+		# Check for AABB overlap using full platform dimensions
 		if (new_min.x <= existing_max.x && new_max.x >= existing_min.x &&
 			new_min.y <= existing_max.y && new_max.y >= existing_min.y &&
 			new_min.z <= existing_max.z && new_max.z >= existing_min.z):

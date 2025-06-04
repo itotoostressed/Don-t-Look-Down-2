@@ -6,7 +6,7 @@ friction = 0.0
 [sub_resource type="BoxMesh" id="BoxMesh_5ajho"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_5ajho"]
-size = Vector3(4, 0.142, 1)
+size = Vector3(4, 0.142, 4)
 
 [node name="Platform" type="StaticBody3D"]
 physics_material_override = SubResource("PhysicsMaterial_5ajho")
@@ -16,5 +16,4 @@ transform = Transform3D(3.99973, 0, 0, 0, 0.142174, 0, 0, 0, 3.99973, 0, 0, 0)
 mesh = SubResource("BoxMesh_5ajho")
 
 [node name="collision" type="CollisionShape3D" parent="."]
-transform = Transform3D(3.99973, 0, 0, 0, 0.142174, 0, 0, 0, 3.99973, 0, 0, 0)
 shape = SubResource("BoxShape3D_5ajho")

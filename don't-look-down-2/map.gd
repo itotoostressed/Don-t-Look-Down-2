@@ -58,13 +58,18 @@ func generate_ladders():
 			# Create and position ladder
 			var ladder = ladderScene.instantiate()
 			
-			# Position ladder at the edge of the lower platform, pointing toward upper platform
+			# Position ladder at the edge of the lower platform
 			ladder.global_position = lower_platform.global_position + edge_offset + Vector3(0, 3.925, 0)
 			
-			# Rotate ladder to face the upper platform
-			var look_target = upper_platform.global_position
-			look_target.y = ladder.global_position.y  # Keep ladder vertical, only rotate horizontally
-			ladder.look_at(look_target, Vector3.UP)
+			# Check if ladder is on left/right side and rotate accordingly
+			if abs(direction_to_upper.x) > abs(direction_to_upper.z):
+				# Ladder is on left or right side - rotate 90 degrees on Y axis
+				ladder.rotation.y = deg_to_rad(90)
+			else:
+				# Ladder is on front/back - keep normal rotation (face toward upper platform)
+				var look_target = upper_platform.global_position
+				look_target.y = ladder.global_position.y  # Keep ladder vertical
+				ladder.look_at(look_target, Vector3.UP)
 			
 			add_child(ladder)
 			ladders_placed += 1

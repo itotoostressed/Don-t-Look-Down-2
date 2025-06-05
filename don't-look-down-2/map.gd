@@ -3,7 +3,7 @@ extends Node3D
 @onready var player = $Player
 @onready var lava = $lava
 var platformScene = load("res://platform.tscn")
-var ladderScene = load("res://ladder.tscn")
+var ladderScene = load("res://ladder.tscn") # Make sure to load your ladder scene
 
 # Configuration variables
 var platform_count = 30
@@ -11,18 +11,18 @@ var max_x_pos = 50
 var max_z_pos = 50
 var min_x_pos = 0
 var min_z_pos = 0
-var min_y_increase = 8
-var max_y_increase = 8.0
+var min_x_distance = -4.0
+var max_x_distance = 4.0
+var min_z_distance = -6.0
+var max_z_distance = 6.0
+var min_y_increase = 8.0 # Smaller minimum step
+var max_y_increase = 12.0  # Larger maximum step
 var no_overlap_radius = 4.5
 var platform_half_width = 1.5
 var platform_half_depth = 1.5
-
-# Spiral configuration
-var spiral_radius = 15.0  # Base radius of the spiral
-var spiral_radius_increment = 0.5  # How much the radius grows per platform
-var spiral_angle_increment = PI / 4  # Angle between platforms (45 degrees)
-
-const LADDER_HEIGHT = 7.85
+const LADDER_HEIGHT = 7.85 # Your ladder height
+var changeDirX = false
+var changeDirZ = false
 
 func _ready():
 	generate_platforms()
@@ -45,7 +45,7 @@ func generate_ladders():
 		var upper_platform = platforms[i + 1]
 		var height_diff = upper_platform.global_position.y - lower_platform.global_position.y
 		
-		if height_diff >= 2.5 and height_diff <= LADDER_HEIGHT * 1.3:
+		if height_diff >= 2.5:
 			# Create and position ladder
 			var ladder = ladderScene.instantiate()
 			ladder.global_position += Vector3(2, 3.925, 0) + lower_platform.global_position
@@ -55,6 +55,7 @@ func generate_ladders():
 			add_child(ladder)
 			ladders_placed += 1
 			
+			# Use more generous ladder limit (you can adjust this as needed)
 			if ladders_placed >= platform_count:
 				break
 
@@ -88,12 +89,12 @@ func _position_overlaps(position: Vector3, existing_platforms: Array) -> bool:
 	# Create bounding box for new platform with full platform dimensions
 	var new_min = Vector3(
 		position.x - platform_half_width,
-		position.y - 2.0,
+		position.y - 2.0, # Height buffer below platform
 		position.z - platform_half_depth
 	)
 	var new_max = Vector3(
 		position.x + platform_half_width,
-		position.y + 2.0,
+		position.y + 2.0, # Height buffer above platform
 		position.z + platform_half_depth
 	)
 	
@@ -101,12 +102,12 @@ func _position_overlaps(position: Vector3, existing_platforms: Array) -> bool:
 		# Create bounding box for existing platform with same dimensions
 		var existing_min = Vector3(
 			existing.position.x - platform_half_width,
-			existing.position.y - 2.0,
+			existing.position.y - 2.0, # Height buffer below platform
 			existing.position.z - platform_half_depth
 		)
 		var existing_max = Vector3(
 			existing.position.x + platform_half_width,
-			existing.position.y + 2.0,
+			existing.position.y + 2.0, # Height buffer above platform
 			existing.position.z + platform_half_depth
 		)
 		
@@ -119,71 +120,67 @@ func _position_overlaps(position: Vector3, existing_platforms: Array) -> bool:
 	return false
 
 func generate_platforms():
-	var center_position = Vector3(25, -2.5, 25)  # Center of the spiral within bounds
+	var last_position = Vector3(0, -2.5, 0)  # Set initial platform at y=2 instead of y=0
 	var platform_positions = []
-	var current_angle = 0.0
-	var current_radius = spiral_radius
 	
 	for i in range(platform_count):
 		var platform_instance = platformScene.instantiate()
 		var new_position = Vector3.ZERO
 		var valid_position_found = false
 		
-		# Calculate spiral position
-		var x_offset = cos(current_angle) * current_radius
-		var z_offset = sin(current_angle) * current_radius
-		var y_increase = randf_range(min_y_increase, max_y_increase)
-		
-		# Special case for first platform
-		if i == 0:
-			y_increase = 3
-		
-		# Calculate position relative to center
-		new_position = Vector3(
-			center_position.x + x_offset,
-			center_position.y + (i * y_increase),  # You'll handle Y generation yourself
-			center_position.z + z_offset
-		)
-		
-		# Try to place platform, with fallback attempts if needed
-		for attempt in range(10):
+		for attempt in range(platform_count * 2):  # Increased attempts since we have more constraints
+			var y_increase = randf_range(min_y_increase, max_y_increase)
+			# Calculate random offsets
+			if (i == 0):
+				y_increase = 3
+			
+			# Randomly flip changeDirX and changeDirZ for next iteration (50% chance)
+			if randf() > 0.5:
+				changeDirX = !changeDirX
+				changeDirZ = !changeDirZ
+			
+			# Generate varied X offset using distance range
+			var x_offset = randf_range(abs(min_x_distance), max_x_distance)  # Use abs() to ensure positive min
+			if not changeDirX:
+				x_offset *= -1  # Apply negative direction if changeDirX is false
+			
+			# Generate varied Z offset using distance range  
+			var z_offset = randf_range(abs(min_z_distance), max_z_distance)  # Use abs() to ensure positive min
+			if not changeDirZ:
+				z_offset *= -1  # Apply negative direction if changeDirZ is false
+			
+			new_position = Vector3(
+				last_position.x + x_offset,
+				last_position.y + y_increase,
+				last_position.z + z_offset
+			)
+			
 			# Check if position is within bounds
 			if _position_within_bounds(new_position) and not _position_overlaps(new_position, platform_positions):
 				valid_position_found = true
 				break
-			else:
-				# Adjust angle slightly if position doesn't work
-				current_angle += PI / 8  # Small adjustment
-				x_offset = cos(current_angle) * current_radius
-				z_offset = sin(current_angle) * current_radius
-				new_position = Vector3(
-					center_position.x + x_offset,
-					new_position.y,  # Keep the same Y
-					center_position.z + z_offset
-				)
 		
 		if not valid_position_found:
-			print("Warning: Couldn't find valid position for platform ", i)
+			print("Warning: Couldn't find valid position after ", platform_count * 2, " attempts")
+			# If we can't find a valid position, try to place it within bounds anyway
 			new_position = _clamp_position_to_bounds(new_position)
 		
 		platform_instance.position = new_position
 		
-		# Set platform type and texture
-		var platformType = randi() % 2
+		# change platform types
+		var platformType = randi() % 2 # 0-3 inclusive
 		
 		const REGULAR = 0
-		const ICE_PLATFORM = 1
 		var ICE_TEXTURE = load("res://ice_texture.tres")
 		var NORMAL_TEXTURE = load("res://wood.tres")
-		
-		if platformType == REGULAR:
+		const ICE_PLATFORM = 1
+		if(platformType == REGULAR):
 			platform_instance.get_node("texture").material_override = NORMAL_TEXTURE
 			platform_instance.add_to_group("platform")
-		elif platformType == ICE_PLATFORM:
+		if (platformType == ICE_PLATFORM):
 			platform_instance.get_node("texture").material_override = ICE_TEXTURE
 			platform_instance.add_to_group("ice")
-		
-		# Add platform to scene
+		# instantiate platform
 		add_child(platform_instance)
 		
 		platform_positions.append({
@@ -191,10 +188,7 @@ func generate_platforms():
 			"half_width": platform_half_width,
 			"half_depth": platform_half_depth
 		})
-		
-		# Update spiral parameters for next platform
-		current_angle += spiral_angle_increment
-		current_radius += spiral_radius_increment
+		last_position = new_position
 
 func _on_lava_body_entered(body: Node3D) -> void:
-	pass
+	pass # Replace with function body.

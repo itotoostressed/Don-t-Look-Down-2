@@ -46,16 +46,30 @@ func generate_ladders():
 		var height_diff = upper_platform.global_position.y - lower_platform.global_position.y
 		
 		if height_diff >= 2.5:
+			# Calculate the direction from lower to upper platform
+			var direction_to_upper = upper_platform.global_position - lower_platform.global_position
+			direction_to_upper.y = 0  # Remove vertical component for horizontal direction only
+			direction_to_upper = direction_to_upper.normalized()
+			
+			# Calculate ladder position on the edge of the lower platform
+			# Scale by platform size to place it at the edge
+			var edge_offset = direction_to_upper * (platform_half_width * 0.8)  # 0.8 to keep it slightly inset
+			
 			# Create and position ladder
 			var ladder = ladderScene.instantiate()
-			ladder.global_position += Vector3(2, 3.925, 0) + lower_platform.global_position
-			# Rotate to face upper platform
-			ladder.look_at(upper_platform.global_position, Vector3.UP)
+			
+			# Position ladder at the edge of the lower platform, pointing toward upper platform
+			ladder.global_position = lower_platform.global_position + edge_offset + Vector3(0, 3.925, 0)
+			
+			# Rotate ladder to face the upper platform
+			var look_target = upper_platform.global_position
+			look_target.y = ladder.global_position.y  # Keep ladder vertical, only rotate horizontally
+			ladder.look_at(look_target, Vector3.UP)
 			
 			add_child(ladder)
 			ladders_placed += 1
 			
-			# Use more generous ladder limit (you can adjust this as needed)
+			# Use more generous ladder limit
 			if ladders_placed >= platform_count:
 				break
 
@@ -134,20 +148,32 @@ func generate_platforms():
 			if (i == 0):
 				y_increase = 3
 			
-			# Randomly flip changeDirX and changeDirZ for next iteration (50% chance)
-			if randf() > 0.5:
+			# Separate direction changes with different probabilities
+			if randf() > 0.35:  # 35% chance to flip X direction
 				changeDirX = !changeDirX
+			if randf() > 0.45:  # 45% chance to flip Z direction
 				changeDirZ = !changeDirZ
 			
-			# Generate varied X offset using distance range
-			var x_offset = randf_range(abs(min_x_distance), max_x_distance)  # Use abs() to ensure positive min
-			if not changeDirX:
+			# Generate varied X offset with actual variation
+			var x_offset = randf_range(1.5, 6.0)  # Range from 1.5 to 6.0 units
+			if randf() > 0.85:  # 15% chance to not move in X at all
+				x_offset = 0
+			elif not changeDirX:
 				x_offset *= -1  # Apply negative direction if changeDirX is false
 			
-			# Generate varied Z offset using distance range  
-			var z_offset = randf_range(abs(min_z_distance), max_z_distance)  # Use abs() to ensure positive min
-			if not changeDirZ:
+			# Generate varied Z offset with actual variation  
+			var z_offset = randf_range(2.0, 8.0)  # Range from 2.0 to 8.0 units
+			if randf() > 0.8:   # 20% chance to not move in Z at all
+				z_offset = 0
+			elif not changeDirZ:
 				z_offset *= -1  # Apply negative direction if changeDirZ is false
+			
+			# Optional: Add cluster mode for tight groups
+			if randf() > 0.9:  # 10% chance for cluster mode
+				x_offset = randf_range(0.5, 2.0)
+				z_offset = randf_range(0.5, 2.0)
+				if not changeDirX: x_offset *= -1
+				if not changeDirZ: z_offset *= -1
 			
 			new_position = Vector3(
 				last_position.x + x_offset,
@@ -167,13 +193,13 @@ func generate_platforms():
 		
 		platform_instance.position = new_position
 		
-		# change platform types
+		# change properties
 		var platformType = randi() % 2 # 0-3 inclusive
-		
 		const REGULAR = 0
 		var ICE_TEXTURE = load("res://ice_texture.tres")
 		var NORMAL_TEXTURE = load("res://wood.tres")
 		const ICE_PLATFORM = 1
+		
 		if(platformType == REGULAR):
 			platform_instance.get_node("texture").material_override = NORMAL_TEXTURE
 			platform_instance.add_to_group("platform")
@@ -189,6 +215,9 @@ func generate_platforms():
 			"half_depth": platform_half_depth
 		})
 		last_position = new_position
+
+func checkWin():
+	pass
 
 func _on_lava_body_entered(body: Node3D) -> void:
 	pass # Replace with function body.

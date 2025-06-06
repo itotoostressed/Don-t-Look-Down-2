@@ -253,10 +253,7 @@ func checkWin():
 	if (x_distance <= platform_half_width and 
 		z_distance <= platform_half_depth and 
 		y_distance <= 3.0):  # 3.0 units vertical tolerance
-		print("Player won!")
-		# Optional: Add more win behavior
-		# get_tree().paused = true
-		# You could show a win screen or change scenes here
+		get_tree().change_scene_to_file("res://win_screen.tscn")
 
 func _on_lava_body_entered(body: Node3D) -> void:
 	pass # Replace with function body.

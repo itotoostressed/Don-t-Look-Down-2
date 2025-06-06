@@ -1,5 +1,6 @@
-[gd_scene load_steps=2 format=3 uid="uid://c7funxaayh7so"]
+[gd_scene load_steps=3 format=3 uid="uid://c7funxaayh7so"]
 
+[ext_resource type="Script" uid="uid://dlruyboq1bs25" path="res://death_screen.gd" id="1_ex68u"]
 [ext_resource type="FontFile" uid="uid://y4tedhsaq5ma" path="res://Minercraftory.ttf" id="1_if853"]
 
 [node name="DeathScreen" type="Control"]
@@ -10,6 +11,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+script = ExtResource("1_ex68u")
 
 [node name="ColorRect" type="ColorRect" parent="."]
 layout_mode = 1

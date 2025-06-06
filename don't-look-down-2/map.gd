@@ -24,6 +24,10 @@ const LADDER_HEIGHT = 7.85 # Your ladder height
 var changeDirX = false
 var changeDirZ = false
 
+func _process(delta: float) -> void:
+	checkWin()
+	lava.rise()
+
 func _ready():
 	generate_platforms()
 	await get_tree().create_timer(0.1).timeout
@@ -222,7 +226,37 @@ func generate_platforms():
 		last_position = new_position
 
 func checkWin():
-	pass
+	# Get all platforms and find the highest one
+	var platforms = get_tree().get_nodes_in_group("platform") + get_tree().get_nodes_in_group("ice")
+	
+	if platforms.size() == 0:
+		return  # No platforms to check
+	
+	# Find the highest platform
+	var highest_platform = platforms[0]
+	for platform in platforms:
+		if platform.global_position.y > highest_platform.global_position.y:
+			highest_platform = platform
+	
+	# Check if player is within the area of the highest platform
+	var player_pos = player.global_position
+	var platform_pos = highest_platform.global_position
+	
+	# Check if player is within platform bounds (horizontally)
+	var x_distance = abs(player_pos.x - platform_pos.x)
+	var z_distance = abs(player_pos.z - platform_pos.z)
+	
+	# Check if player is close enough vertically (standing on or near the platform)
+	var y_distance = abs(player_pos.y - platform_pos.y)
+	
+	# Player wins if they're within the platform area and close enough vertically
+	if (x_distance <= platform_half_width and 
+		z_distance <= platform_half_depth and 
+		y_distance <= 3.0):  # 3.0 units vertical tolerance
+		print("Player won!")
+		# Optional: Add more win behavior
+		# get_tree().paused = true
+		# You could show a win screen or change scenes here
 
 func _on_lava_body_entered(body: Node3D) -> void:
 	pass # Replace with function body.

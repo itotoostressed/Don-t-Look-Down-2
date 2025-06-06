@@ -5,10 +5,14 @@ var maxJumps = 999
 const SENSITIVITY = 0.01
 const SPEED = 7.0
 const JUMP_VELOCITY = 10
-const LADDER_CLIMB_SPEED = 4.0  # Speed when climbing ladders
+const LADDER_CLIMB_SPEED = 4.0
+
+# Coyote time for better jumping
+const COYOTE_TIME = 0.15           # Time after leaving ground you can still jump
+var coyote_timer = 0.0
 
 var FRICTION = 0.1
-var is_on_ladder = false  # Track if player is on a ladder
+var is_on_ladder = false
 
 @onready var head = $Head
 @onready var camera = $Head/Camera3D
@@ -18,10 +22,8 @@ func _ready():
 
 func _unhandled_input(event):
 	if event is InputEventMouseMotion:
-		# Only rotate the head (horizontal) and camera (vertical)
 		head.rotate_y(-event.relative.x * SENSITIVITY)
 		camera.rotate_x(-event.relative.y * SENSITIVITY)
-		# Clamp camera pitch
 		camera.rotation.x = clamp(camera.rotation.x, deg_to_rad(-90), deg_to_rad(90))
 
 func _physics_process(delta: float) -> void:
@@ -34,60 +36,66 @@ func _physics_process(delta: float) -> void:
 		var collision = get_slide_collision(i)
 		if collision.get_collider().is_in_group("ladder"):
 			is_on_ladder = true
-			numJumps = 0  # Reset jumps when touching ladder
+			numJumps = 0
 			break
 	
 	# Ladder climbing behavior
 	if is_on_ladder:
-		# Gravity doesn't affect player on ladder
 		velocity.y = 0
+		coyote_timer = COYOTE_TIME  # Reset coyote time on ladder
 		
-		# Vertical movement on ladder
 		if Input.is_action_pressed("moveForward"):
 			velocity.y = LADDER_CLIMB_SPEED
 		elif Input.is_action_pressed("moveBackward"):
 			velocity.y = -LADDER_CLIMB_SPEED
 	else:
-		# Normal gravity when not on ladder
-		if not is_on_floor():
-			velocity += get_gravity() * delta
-			FRICTION = 1  # Default friction in air
-		else:
+		# Use Godot's built-in gravity
+		if is_on_floor():
 			numJumps = 0
+			coyote_timer = COYOTE_TIME  # Reset coyote time
 			
-			# Determine floor type using slide collision
+			# Floor type detection
 			if get_slide_collision_count() > 0:
 				var floor_collision = get_slide_collision(0)
 				var floor_body = floor_collision.get_collider()
 				
 				if floor_body:
 					if floor_body.is_in_group("ice"):
-						FRICTION = 0  # No friction on ice
+						FRICTION = 0
 					elif floor_body.is_in_group("platform"):
-						FRICTION = 1  # Normal friction on platforms
+						FRICTION = 1
 					else:
-						FRICTION = SPEED  # Default friction
+						FRICTION = SPEED
+		else:
+			# Apply Godot's built-in gravity when in air
+			velocity += get_gravity() * delta
+			
+			# Count down coyote time
+			coyote_timer -= delta
+			FRICTION = 1
 	
-	# Jumping (can't jump while on ladder)
-	if Input.is_action_just_pressed("jump") and numJumps < maxJumps and not is_on_ladder:
-		numJumps += 1
-		velocity.y = JUMP_VELOCITY
+	# Improved jumping with coyote time
+	if Input.is_action_just_pressed("jump") and not is_on_ladder:
+		# Can jump if: on ground, within coyote time, or have jumps left
+		if (is_on_floor() or coyote_timer > 0 or numJumps < maxJumps):
+			if not is_on_floor() and coyote_timer <= 0:
+				numJumps += 1  # Only count as air jump if not on ground/coyote
+			
+			velocity.y = JUMP_VELOCITY
+			coyote_timer = 0       # Use up coyote time
 	
-	# Horizontal movement (only if not on ladder or when leaving ladder)
+	# Horizontal movement
 	if not is_on_ladder or (was_on_ladder and not is_on_ladder):
 		var input_dir = Input.get_vector("moveLeft", "moveRight", "moveBackward", "moveForward")
 		var direction = Vector3.ZERO
 		
-		# Get forward and right vectors from camera basis
 		var forward = -head.global_transform.basis.z
 		var right = head.global_transform.basis.x
 		
-		# Combine directions based on input
 		direction = forward * input_dir.y + right * input_dir.x
-		direction.y = 0  # Remove any vertical component
+		direction.y = 0
 		direction = direction.normalized()
 		
-		# Apply movement
 		if direction:
 			velocity.x = direction.x * SPEED
 			velocity.z = direction.z * SPEED
@@ -96,6 +104,15 @@ func _physics_process(delta: float) -> void:
 			velocity.z = move_toward(velocity.z, 0, FRICTION)
 	
 	move_and_slide()
+	
+	# Check win condition every frame
+	check_win_condition()
+
+func check_win_condition():
+	# Get reference to map node (adjust path if needed)
+	var map = get_parent()  # Assuming player is child of map
+	if map.has_method("checkWin"):
+		map.checkWin()
 
 func _change_to_death_scene():
 	get_tree().change_scene_to_file("res://death_screen.tscn")

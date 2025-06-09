@@ -60,9 +60,11 @@ func _physics_process(delta: float) -> void:
 				var floor_body = floor_collision.get_collider()
 				
 				if floor_body:
-					if floor_body.is_in_group("ice"):
+					# Check the parent node for group membership since the collision is with StaticBody3D
+					var platform_root = floor_body.get_parent()
+					if platform_root and platform_root.is_in_group("ice"):
 						FRICTION = 0
-					elif floor_body.is_in_group("platform"):
+					elif platform_root and platform_root.is_in_group("platform"):
 						FRICTION = 1
 					else:
 						FRICTION = SPEED

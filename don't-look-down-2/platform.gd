@@ -1,15 +1,19 @@
-extends StaticBody3D
+extends Area3D
 
-var has_printed = false
+var has_disappeared = false
 
 func _ready() -> void:
 	# Connect the body entered signal
 	body_entered.connect(_on_body_entered)
 
 func _on_body_entered(body: Node3D) -> void:
-	# Only print once per platform
-	if not has_printed:
-		# 10% chance to print
-		if randf() < 0.1:
-			print("I'm disappearing")
-			has_printed = true 
+	# Only trigger if the body is the player
+	if body.is_in_group("players") and not has_disappeared:
+		disappear()
+
+func disappear() -> void:
+	if not has_disappeared:
+		has_disappeared = true
+		# Queue the platform for deletion
+		queue_free()
+		print("Platform disappeared!")

@@ -34,7 +34,8 @@ func _physics_process(delta: float) -> void:
 	# Check for ladder collisions
 	for i in range(get_slide_collision_count()):
 		var collision = get_slide_collision(i)
-		if collision.get_collider().is_in_group("ladder"):
+		var collider = collision.get_collider()
+		if collider and collider.is_in_group("ladder"):
 			is_on_ladder = true
 			numJumps = 0
 			break
@@ -120,6 +121,6 @@ func _change_to_death_scene():
 	get_tree().change_scene_to_file("res://death_screen.tscn")
 
 func _on_lava_body_entered(body: Node3D) -> void:
-	if body.is_in_group("players"):
+	if body and body.is_in_group("players"):
 		print("player died!")
 		call_deferred("_change_to_death_scene")

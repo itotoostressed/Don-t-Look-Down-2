@@ -233,10 +233,14 @@ func checkWin():
 		return  # No platforms to check
 	
 	# Find the highest platform
-	var highest_platform = platforms[0]
+	var highest_platform = null
 	for platform in platforms:
-		if platform.global_position.y > highest_platform.global_position.y:
-			highest_platform = platform
+		if platform and is_instance_valid(platform):  # Check if platform is valid
+			if highest_platform == null or platform.global_position.y > highest_platform.global_position.y:
+				highest_platform = platform
+	
+	if highest_platform == null:
+		return  # No valid platforms found
 	
 	# Check if player is within the area of the highest platform
 	var player_pos = player.global_position

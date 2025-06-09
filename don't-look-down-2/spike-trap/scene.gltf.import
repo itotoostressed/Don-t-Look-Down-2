@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://bdadoumq7e5xr"
-path="res://.godot/imported/spike-trap.glb-5daf9bc69e2138333f0f8676d776727f.scn"
+uid="uid://befubtqx4dtim"
+path="res://.godot/imported/scene.gltf-401301325bf391da881d1550443954c1.scn"
 
 [deps]
 
-source_file="res://spike-trap.glb"
-dest_files=["res://.godot/imported/spike-trap.glb-5daf9bc69e2138333f0f8676d776727f.scn"]
+source_file="res://spike-trap/scene.gltf"
+dest_files=["res://.godot/imported/scene.gltf-401301325bf391da881d1550443954c1.scn"]
 
 [params]
 

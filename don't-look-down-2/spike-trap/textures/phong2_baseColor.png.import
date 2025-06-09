@@ -2,20 +2,17 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cls5yl33dxh13"
-path.s3tc="res://.godot/imported/spike-trap_1.png-24749c4db66df9c9f7e9f94b89a01f00.s3tc.ctex"
+uid="uid://cq0vdcknoh0nq"
+path.s3tc="res://.godot/imported/phong2_baseColor.png-98dbc7296854ed13209660abdae21bd4.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
 }
-generator_parameters={
-"md5": "7ec8a003b433faa670e3c552e77f30f9"
-}
 
 [deps]
 
-source_file="res://spike-trap_1.png"
-dest_files=["res://.godot/imported/spike-trap_1.png-24749c4db66df9c9f7e9f94b89a01f00.s3tc.ctex"]
+source_file="res://spike-trap/textures/phong2_baseColor.png"
+dest_files=["res://.godot/imported/phong2_baseColor.png-98dbc7296854ed13209660abdae21bd4.s3tc.ctex"]
 
 [params]
 

@@ -2,6 +2,7 @@ extends Node3D
 
 @onready var player = $Player
 @onready var lava = $lava
+@onready var stats = $Stats  # Add reference to Stats node
 var platformScene = load("res://platform.tscn")
 var ladderScene = load("res://ladder.tscn") # Make sure to load your ladder scene
 
@@ -29,6 +30,13 @@ func _process(delta: float) -> void:
 	lava.rise()
 
 func _ready():
+	print("Map ready! Checking for Stats node...")
+	if has_node("/root/Stats"):
+		print("Stats node found in map!")
+		var stats = get_node("/root/Stats")
+		print("Current stats at map start - Jumps: ", stats.jumps, " Deaths: ", stats.deaths, " Clears: ", stats.clears)
+	else:
+		print("WARNING: Stats node not found in map!")
 	generate_platforms()
 	await get_tree().create_timer(0.1).timeout
 	generate_ladders()
@@ -89,8 +97,7 @@ func _position_within_bounds(position: Vector3) -> bool:
 	var platform_min_z = position.z - platform_half_depth
 	var platform_max_z = position.z + platform_half_depth
 	
-	return (platform_min_x >= min_x_pos and platform_max_x <= max_x_pos and
-			platform_min_z >= min_z_pos and platform_max_z <= max_z_pos)
+	return (platform_min_x >= min_x_pos and platform_max_x <= max_x_pos and platform_min_z >= min_z_pos and platform_max_z <= max_z_pos)
 
 func _clamp_position_to_bounds(position: Vector3) -> Vector3:
 	# Clamp the position to ensure the platform stays within bounds
@@ -257,7 +264,30 @@ func checkWin():
 	if (x_distance <= platform_half_width and 
 		z_distance <= platform_half_depth and 
 		y_distance <= 3.0):  # 3.0 units vertical tolerance
+		print("Player reached the top! Recording clear...")
+		if has_node("/root/Stats"):
+			var stats = get_node("/root/Stats")
+			print("Current stats before clear - Jumps: ", stats.jumps, " Deaths: ", stats.deaths, " Clears: ", stats.clears)
+			stats.record_clear()
+			print("Clear recorded! New stats - Jumps: ", stats.jumps, " Deaths: ", stats.deaths, " Clears: ", stats.clears)
+			# Verify the save
+			stats.save_stats()
+			print("Stats saved after clear")
+		else:
+			print("ERROR: Stats node not found when trying to record clear!")
 		get_tree().change_scene_to_file("res://win_screen.tscn")
 
 func _on_lava_body_entered(body: Node3D) -> void:
-	pass # Replace with function body.
+	if body == player:
+		print("Player hit lava! Recording death...")
+		if has_node("/root/Stats"):
+			var stats = get_node("/root/Stats")
+			print("Current stats before death - Jumps: ", stats.jumps, " Deaths: ", stats.deaths, " Clears: ", stats.clears)
+			stats.record_death()
+			print("Death recorded! New stats - Jumps: ", stats.jumps, " Deaths: ", stats.deaths, " Clears: ", stats.clears)
+			# Verify the save
+			stats.save_stats()
+			print("Stats saved after death")
+		else:
+			print("ERROR: Stats node not found when trying to record death!")
+		get_tree().reload_current_scene()

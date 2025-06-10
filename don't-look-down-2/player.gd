@@ -1,5 +1,7 @@
 extends CharacterBody3D
 
+signal jumped
+
 var numJumps = 0
 var maxJumps = 999
 const SENSITIVITY = 0.01
@@ -19,6 +21,11 @@ var is_on_ladder = false
 
 func _ready(): 
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	print("Player ready! Checking for Stats node...")
+	if has_node("/root/Stats"):
+		print("Stats node found in player!")
+	else:
+		print("WARNING: Stats node not found in player!")
 
 func _unhandled_input(event):
 	if event is InputEventMouseMotion:
@@ -86,6 +93,18 @@ func _physics_process(delta: float) -> void:
 			
 			velocity.y = JUMP_VELOCITY
 			coyote_timer = 0       # Use up coyote time
+			print("Player jumped! Recording jump...")
+			if has_node("/root/Stats"):
+				var stats = get_node("/root/Stats")
+				print("Current stats before jump - Jumps: ", stats.jumps, " Deaths: ", stats.deaths, " Clears: ", stats.clears)
+				stats.record_jump()
+				print("Jump recorded! New stats - Jumps: ", stats.jumps, " Deaths: ", stats.deaths, " Clears: ", stats.clears)
+				# Verify the save
+				stats.save_stats()
+				print("Stats saved after jump")
+			else:
+				print("ERROR: Stats node not found when trying to record jump!")
+			emit_signal("jumped")  # Emit the jump signal
 	
 	# Horizontal movement
 	if not is_on_ladder or (was_on_ladder and not is_on_ladder):

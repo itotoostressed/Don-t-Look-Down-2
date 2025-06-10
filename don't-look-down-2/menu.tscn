@@ -41,9 +41,67 @@ theme_override_font_sizes/font_size = 80
 text = "DON'T LOOK DOWN 2"
 horizontal_alignment = 1
 
-[node name="StartButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(200, 60)
+[node name="ButtonContainer" type="HBoxContainer" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="StartButton" type="Button" parent="CenterContainer/VBoxContainer/ButtonContainer"]
+custom_minimum_size = Vector2(280, 80)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("1_lti8b")
 theme_override_font_sizes/font_size = 32
 text = "Start Game"
+
+[node name="StatsButton" type="Button" parent="CenterContainer/VBoxContainer/ButtonContainer"]
+custom_minimum_size = Vector2(280, 80)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_lti8b")
+theme_override_font_sizes/font_size = 32
+text = "Statistics"
+
+[node name="StatsPanel" type="Panel" parent="CenterContainer/VBoxContainer/ButtonContainer/StatsButton"]
+visible = false
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -150.0
+offset_top = 20.0
+offset_right = 150.0
+offset_bottom = 170.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="StatsContainer" type="VBoxContainer" parent="CenterContainer/VBoxContainer/ButtonContainer/StatsButton/StatsPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+
+[node name="JumpsLabel" type="Label" parent="CenterContainer/VBoxContainer/ButtonContainer/StatsButton/StatsPanel/StatsContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_lti8b")
+theme_override_font_sizes/font_size = 24
+text = "Jumps: 0"
+
+[node name="DeathsLabel" type="Label" parent="CenterContainer/VBoxContainer/ButtonContainer/StatsButton/StatsPanel/StatsContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_lti8b")
+theme_override_font_sizes/font_size = 24
+text = "Deaths: 0"
+
+[node name="ClearsLabel" type="Label" parent="CenterContainer/VBoxContainer/ButtonContainer/StatsButton/StatsPanel/StatsContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_lti8b")
+theme_override_font_sizes/font_size = 24
+text = "Clears: 0"

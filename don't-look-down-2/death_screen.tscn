@@ -34,12 +34,23 @@ mouse_filter = 2
 [node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
 layout_mode = 2
 mouse_filter = 2
+theme_override_constants/separation = 20
 
 [node name="Label" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("1_if853")
 theme_override_font_sizes/font_size = 80
 text = "You Died!"
+horizontal_alignment = 1
+
+[node name="StatsLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_if853")
+theme_override_font_sizes/font_size = 32
+text = "Stats at death:
+Jumps: 0
+Deaths: 0
+Clears: 0"
 horizontal_alignment = 1
 
 [node name="Button" type="Button" parent="CenterContainer/VBoxContainer"]

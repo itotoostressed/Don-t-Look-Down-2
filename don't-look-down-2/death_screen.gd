@@ -17,24 +17,14 @@ func _ready() -> void:
 func record_death() -> void:
 	var stats = get_node("/root/Stats")
 	if stats:
-		print("Recording death in death screen...")
 		stats.record_death()
-		print("Death recorded!")
-	else:
-		print("Warning: Stats node not found in death screen!")
 
 func display_stats() -> void:
 	var stats = get_node("/root/Stats")
 	if stats:
 		var stats_data = stats.get_stats()
-		print("Death Screen - Current Stats:")
-		print("Jumps: ", stats_data.jumps)
-		print("Deaths: ", stats_data.deaths)
-		print("Clears: ", stats_data.clears)
-		
 		stats_label.text = "Stats at death:\nJumps: " + str(stats_data.jumps) + "\nDeaths: " + str(stats_data.deaths) + "\nClears: " + str(stats_data.clears)
 	else:
-		print("Warning: Stats node not found in death screen!")
 		stats_label.text = "Stats not available"
 
 # Called when the return button is pressed

@@ -30,13 +30,6 @@ func _process(delta: float) -> void:
 	lava.rise()
 
 func _ready():
-	print("Map ready! Checking for Stats node...")
-	if has_node("Stats"):
-		print("Stats node found in map!")
-		var stats = get_node("Stats")
-		print("Current stats at map start - Jumps: ", stats.jumps, " Deaths: ", stats.deaths, " Clears: ", stats.clears)
-	else:
-		print("WARNING: Stats node not found in map!")
 	generate_platforms()
 	await get_tree().create_timer(0.1).timeout
 	generate_ladders()
@@ -264,30 +257,12 @@ func checkWin():
 	if (x_distance <= platform_half_width and 
 		z_distance <= platform_half_depth and 
 		y_distance <= 3.0):  # 3.0 units vertical tolerance
-		print("Player reached the top! Recording clear...")
 		if has_node("Stats"):
 			var stats = get_node("Stats")
-			print("Current stats before clear - Jumps: ", stats.jumps, " Deaths: ", stats.deaths, " Clears: ", stats.clears)
 			stats.record_clear()
-			print("Clear recorded! New stats - Jumps: ", stats.jumps, " Deaths: ", stats.deaths, " Clears: ", stats.clears)
-			# Verify the save
 			stats.save_stats()
-			print("Stats saved after clear")
-		else:
-			print("ERROR: Stats node not found when trying to record clear!")
 		get_tree().change_scene_to_file("res://win_screen.tscn")
 
 func _on_lava_body_entered(body: Node3D) -> void:
 	if body == player:
-		print("Player hit lava! Recording death...")
-		if has_node("Stats"):
-			var stats = get_node("Stats")
-			print("Current stats before death - Jumps: ", stats.jumps, " Deaths: ", stats.deaths, " Clears: ", stats.clears)
-			stats.record_death()
-			print("Death recorded! New stats - Jumps: ", stats.jumps, " Deaths: ", stats.deaths, " Clears: ", stats.clears)
-			# Verify the save
-			stats.save_stats()
-			print("Stats saved after death")
-		else:
-			print("ERROR: Stats node not found when trying to record death!")
-		get_tree().reload_current_scene()
+		get_tree().change_scene_to_file("res://death_screen.tscn")

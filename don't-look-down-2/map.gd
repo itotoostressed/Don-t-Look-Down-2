@@ -31,9 +31,9 @@ func _process(delta: float) -> void:
 
 func _ready():
 	print("Map ready! Checking for Stats node...")
-	if has_node("/root/Stats"):
+	if has_node("Stats"):
 		print("Stats node found in map!")
-		var stats = get_node("/root/Stats")
+		var stats = get_node("Stats")
 		print("Current stats at map start - Jumps: ", stats.jumps, " Deaths: ", stats.deaths, " Clears: ", stats.clears)
 	else:
 		print("WARNING: Stats node not found in map!")
@@ -265,8 +265,8 @@ func checkWin():
 		z_distance <= platform_half_depth and 
 		y_distance <= 3.0):  # 3.0 units vertical tolerance
 		print("Player reached the top! Recording clear...")
-		if has_node("/root/Stats"):
-			var stats = get_node("/root/Stats")
+		if has_node("Stats"):
+			var stats = get_node("Stats")
 			print("Current stats before clear - Jumps: ", stats.jumps, " Deaths: ", stats.deaths, " Clears: ", stats.clears)
 			stats.record_clear()
 			print("Clear recorded! New stats - Jumps: ", stats.jumps, " Deaths: ", stats.deaths, " Clears: ", stats.clears)
@@ -280,8 +280,8 @@ func checkWin():
 func _on_lava_body_entered(body: Node3D) -> void:
 	if body == player:
 		print("Player hit lava! Recording death...")
-		if has_node("/root/Stats"):
-			var stats = get_node("/root/Stats")
+		if has_node("Stats"):
+			var stats = get_node("Stats")
 			print("Current stats before death - Jumps: ", stats.jumps, " Deaths: ", stats.deaths, " Clears: ", stats.clears)
 			stats.record_death()
 			print("Death recorded! New stats - Jumps: ", stats.jumps, " Deaths: ", stats.deaths, " Clears: ", stats.clears)

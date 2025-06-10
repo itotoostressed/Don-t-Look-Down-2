@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://dpq6nfagtjfj7"]
+[gd_scene load_steps=12 format=3 uid="uid://dpq6nfagtjfj7"]
 
 [ext_resource type="Script" uid="uid://d3lf7x15q50wu" path="res://map.gd" id="1_p5pve"]
 [ext_resource type="PackedScene" uid="uid://ctsll3aira0xk" path="res://player.tscn" id="1_wijl4"]
@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://uqx4nqtnn532" path="res://platform.tscn" id="2_p5pve"]
 [ext_resource type="PackedScene" uid="uid://bvlk4d4fpxgw2" path="res://lava.tscn" id="5_urblq"]
 [ext_resource type="PackedScene" uid="uid://cgm2d132hoati" path="res://spike_trap.tscn" id="6_iw27f"]
+[ext_resource type="PackedScene" uid="uid://iv0otnf28rgx" path="res://stats.tscn" id="7_xxxxx"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_p5pve"]
 sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
@@ -54,5 +55,7 @@ transform = Transform3D(2.5259, 0, 0, 0, 2.5259, 0, 0, 0, 2.5259, 0, -18.7825, 0
 
 [node name="Sketchfab_Scene" parent="." instance=ExtResource("6_iw27f")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.08813, 1.2946, 10.6973)
+
+[node name="Stats" parent="." instance=ExtResource("7_xxxxx")]
 
 [connection signal="body_entered" from="lava" to="Player" method="_on_lava_body_entered"]

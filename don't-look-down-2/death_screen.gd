@@ -10,8 +10,18 @@ func _ready() -> void:
 	# Connect the button's pressed signal to our handler
 	$CenterContainer/VBoxContainer/Button.pressed.connect(_on_return_button_pressed)
 	
-	# Display current stats
+	# Record death and display current stats
+	record_death()
 	display_stats()
+
+func record_death() -> void:
+	var stats = get_node("/root/Stats")
+	if stats:
+		print("Recording death in death screen...")
+		stats.record_death()
+		print("Death recorded!")
+	else:
+		print("Warning: Stats node not found in death screen!")
 
 func display_stats() -> void:
 	var stats = get_node("/root/Stats")

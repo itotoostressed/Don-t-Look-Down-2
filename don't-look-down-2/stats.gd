@@ -93,7 +93,9 @@ func save_stats():
 			print("ERROR: Failed to convert stats to JSON!")
 			return
 			
+		# Write the JSON string to the file
 		save_file.store_string(json_string)
+		save_file.flush()  # Ensure data is written to disk
 		print("Stats saved successfully!")
 		
 		# Verify the save by reading it back
@@ -113,6 +115,7 @@ func save_stats():
 				print("Got: ", verify_data)
 		else:
 			print("WARNING: Could not verify save file!")
+			print("Error code: ", FileAccess.get_open_error())
 	else:
 		print("ERROR: Could not open save file for writing!")
 		print("Error code: ", FileAccess.get_open_error())

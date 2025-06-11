@@ -20,7 +20,16 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.301961, 0.301961, 0.301961, 0.596078)
+color = Color(0.318964, 0.295939, 0.29562, 0.596078)
+
+[node name="PanelContainer" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="CenterContainer" type="CenterContainer" parent="."]
 layout_mode = 1
@@ -51,7 +60,21 @@ custom_minimum_size = Vector2(280, 80)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("1_lti8b")
 theme_override_font_sizes/font_size = 32
-text = "Start Game"
+text = "Single Player"
+
+[node name="HostButton" type="Button" parent="CenterContainer/VBoxContainer/ButtonContainer"]
+custom_minimum_size = Vector2(280, 80)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_lti8b")
+theme_override_font_sizes/font_size = 32
+text = "Host Game"
+
+[node name="JoinButton" type="Button" parent="CenterContainer/VBoxContainer/ButtonContainer"]
+custom_minimum_size = Vector2(280, 80)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_lti8b")
+theme_override_font_sizes/font_size = 32
+text = "Join Game"
 
 [node name="StatsButton" type="Button" parent="CenterContainer/VBoxContainer/ButtonContainer"]
 custom_minimum_size = Vector2(280, 80)

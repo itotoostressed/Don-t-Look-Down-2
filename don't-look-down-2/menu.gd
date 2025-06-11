@@ -36,6 +36,12 @@ func _on_stats_button_pressed() -> void:
 	stats_panel.visible = !stats_panel.visible
 	update_stats_display()
 
+func _on_host_button_pressed() -> void:
+	NetworkHandler.start_server()
+
+func _on_join_button_pressed() -> void:
+	NetworkHandler.start_server()
+
 func _on_stats_updated() -> void:
 	if stats_panel.visible:
 		update_stats_display()

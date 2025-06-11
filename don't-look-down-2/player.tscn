@@ -1,10 +1,12 @@
-[gd_scene load_steps=4 format=3 uid="uid://ctsll3aira0xk"]
+[gd_scene load_steps=5 format=3 uid="uid://ctsll3aira0xk"]
 
 [ext_resource type="Script" uid="uid://c6e1jv05u7gx8" path="res://player.gd" id="1_4flbx"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_onrkg"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_i3pqv"]
+
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_4flbx"]
 
 [node name="Player" type="CharacterBody3D" groups=["players"]]
 script = ExtResource("1_4flbx")
@@ -21,3 +23,6 @@ shape = SubResource("CapsuleShape3D_i3pqv")
 [node name="Camera3D" type="Camera3D" parent="Head"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.600013, 0)
 current = true
+
+[node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
+replication_config = SubResource("SceneReplicationConfig_4flbx")

@@ -1,7 +1,6 @@
-[gd_scene load_steps=11 format=3 uid="uid://dpq6nfagtjfj7"]
+[gd_scene load_steps=10 format=3 uid="uid://dpq6nfagtjfj7"]
 
 [ext_resource type="Script" uid="uid://d3lf7x15q50wu" path="res://map.gd" id="1_p5pve"]
-[ext_resource type="PackedScene" uid="uid://ctsll3aira0xk" path="res://player.tscn" id="1_wijl4"]
 [ext_resource type="Texture2D" uid="uid://dsx68i3hh0bnk" path="res://696.jpg" id="2_e0an3"]
 [ext_resource type="PackedScene" uid="uid://uqx4nqtnn532" path="res://platform.tscn" id="2_p5pve"]
 [ext_resource type="PackedScene" uid="uid://bvlk4d4fpxgw2" path="res://lava.tscn" id="5_urblq"]
@@ -26,9 +25,6 @@ uv1_triplanar = true
 
 [node name="World" type="Node3D"]
 script = ExtResource("1_p5pve")
-
-[node name="Player" parent="." instance=ExtResource("1_wijl4")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.27678, 0)
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_iw27f")
@@ -55,3 +51,4 @@ transform = Transform3D(2.5259, 0, 0, 0, 2.5259, 0, 0, 0, 2.5259, 0, -18.7825, 0
 [node name="Stats" parent="." instance=ExtResource("7_xxxxx")]
 
 [node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="."]
+_spawnable_scenes = PackedStringArray("uid://ctsll3aira0xk")

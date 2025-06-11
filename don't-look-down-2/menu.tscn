@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://v113c3g3c8c0"]
+[gd_scene load_steps=4 format=3 uid="uid://v113c3g3c8c0"]
 
 [ext_resource type="FontFile" uid="uid://y4tedhsaq5ma" path="res://Minercraftory.ttf" id="1_lti8b"]
 [ext_resource type="Script" uid="uid://b5sj5nrsipstv" path="res://menu.gd" id="1_ouk20"]
+[ext_resource type="Texture2D" uid="uid://dml43kuvbuot" path="res://bg.png" id="2_mae5d"]
 
 [node name="Menu" type="Control"]
 layout_mode = 3
@@ -13,15 +14,6 @@ grow_vertical = 2
 script = ExtResource("1_ouk20")
 metadata/_edit_use_anchors_ = true
 
-[node name="ColorRect" type="ColorRect" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0.318964, 0.295939, 0.29562, 0.596078)
-
 [node name="PanelContainer" type="PanelContainer" parent="."]
 visible = false
 layout_mode = 1
@@ -30,6 +22,22 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="Bg" type="Sprite2D" parent="."]
+position = Vector2(1011, 534)
+texture = ExtResource("2_mae5d")
+
+[node name="ColorRect" type="ColorRect" parent="Bg"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -1011.0
+offset_top = -534.0
+offset_right = -1011.0
+offset_bottom = -534.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.318964, 0.295939, 0.29562, 0.596078)
 
 [node name="CenterContainer" type="CenterContainer" parent="."]
 layout_mode = 1

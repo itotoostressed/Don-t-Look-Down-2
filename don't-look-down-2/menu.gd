@@ -4,6 +4,7 @@ extends Control
 @onready var stats_container = $CenterContainer/VBoxContainer/ButtonContainer/StatsButton/StatsPanel/StatsContainer
 @onready var stats_button = $CenterContainer/VBoxContainer/ButtonContainer/StatsButton
 @onready var start_button = $CenterContainer/VBoxContainer/ButtonContainer/StartButton
+#@onready var 
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
@@ -28,8 +29,9 @@ func _ready() -> void:
 
 # Called when the start button is pressed
 func _on_start_button_pressed() -> void:
+	hide()
 	# Change to the map scene
-	get_tree().change_scene_to_file("res://map.tscn")
+	#get_tree().change_scene_to_file("res://game.tscn")
 
 func _on_stats_button_pressed() -> void:
 	# Toggle stats panel visibility

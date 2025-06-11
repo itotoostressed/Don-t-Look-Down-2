@@ -27,7 +27,7 @@ var changeDirZ = false
 
 func _process(delta: float) -> void:
 	checkWin()
-	lava.rise()
+	#lava.rise()
 
 func _ready():
 	generate_platforms()
@@ -91,6 +91,10 @@ func _position_within_bounds(position: Vector3) -> bool:
 	var platform_max_z = position.z + platform_half_depth
 	
 	return (platform_min_x >= min_x_pos and platform_max_x <= max_x_pos and platform_min_z >= min_z_pos and platform_max_z <= max_z_pos)
+
+func add_player(): #instantiate player when menu button clicked
+	var player = player.instantiate() #
+	print("added player!")
 
 func _clamp_position_to_bounds(position: Vector3) -> Vector3:
 	# Clamp the position to ensure the platform stays within bounds

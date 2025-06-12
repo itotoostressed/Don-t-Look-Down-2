@@ -18,22 +18,40 @@ var is_on_ladder = false
 
 @onready var head = $Head
 @onready var camera = $Head/Camera3D
+@onready var synchronizer = $MultiplayerSynchronizer
 
 func _ready(): 
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
-	print("Player ready! Checking for Stats node...")
+	print("Player ready! Authority: ", is_multiplayer_authority())
+	
+	# Only show camera and enable input for local player
+	if is_multiplayer_authority():
+		camera.current = true
+		set_process_input(true)
+		set_physics_process(true)
+	else:
+		camera.current = false
+		set_process_input(false)
+		set_physics_process(false)
+	
 	if has_node("/root/Stats"):
 		print("Stats node found in player!")
 	else:
 		print("WARNING: Stats node not found in player!")
 
 func _unhandled_input(event):
+	if not is_multiplayer_authority():
+		return
+		
 	if event is InputEventMouseMotion:
 		head.rotate_y(-event.relative.x * SENSITIVITY)
 		camera.rotate_x(-event.relative.y * SENSITIVITY)
 		camera.rotation.x = clamp(camera.rotation.x, deg_to_rad(-90), deg_to_rad(90))
 
 func _physics_process(delta: float) -> void:
+	if not is_multiplayer_authority():
+		return
+		
 	# Reset ladder state each frame
 	var was_on_ladder = is_on_ladder
 	is_on_ladder = false
@@ -127,8 +145,15 @@ func _physics_process(delta: float) -> void:
 	
 	move_and_slide()
 	
-	# Check win condition every frame
-	check_win_condition()
+	# Synchronize position and rotation for other players
+	if is_multiplayer_authority():
+		rpc("update_position", global_position, rotation)
+
+@rpc("reliable")
+func update_position(pos: Vector3, rot: Vector3):
+	if not is_multiplayer_authority():
+		global_position = pos
+		rotation = rot
 
 func check_win_condition():
 	# Get reference to map node (adjust path if needed)

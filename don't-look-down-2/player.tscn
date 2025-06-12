@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://ctsll3aira0xk"]
+[gd_scene load_steps=6 format=3 uid="uid://ctsll3aira0xk"]
 
 [ext_resource type="Script" uid="uid://c6e1jv05u7gx8" path="res://player.gd" id="1_4flbx"]
 
@@ -7,6 +7,21 @@
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_i3pqv"]
 
 [sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_4flbx"]
+properties/0/path = NodePath(".:position")
+properties/0/spawn = true
+properties/0/replication_mode = 1
+properties/1/path = NodePath(".:rotation")
+properties/1/spawn = true
+properties/1/replication_mode = 1
+properties/2/path = NodePath(".:velocity")
+properties/2/spawn = true
+properties/2/replication_mode = 1
+properties/3/path = NodePath(".:name")
+properties/3/spawn = true
+properties/3/replication_mode = 1
+properties/4/path = NodePath("Head:rotation")
+properties/4/spawn = true
+properties/4/replication_mode = 1
 
 [node name="Player" type="CharacterBody3D" groups=["players"]]
 script = ExtResource("1_4flbx")

@@ -3,6 +3,7 @@ extends Node3D
 @onready var player = $Player
 @onready var lava = $lava
 @onready var stats = $Stats  # Add reference to Stats node
+@onready var multiplayer_spawner = $MultiplayerSpawner
 var platformScene = load("res://platform.tscn")
 var ladderScene = load("res://ladder.tscn") # Make sure to load your ladder scene
 
@@ -25,14 +26,102 @@ const LADDER_HEIGHT = 7.85 # Your ladder height
 var changeDirX = false
 var changeDirZ = false
 
-func _process(delta: float) -> void:
-	checkWin()
-	#lava.rise()
+# Multiplayer variables
+var players = {}  # Dictionary to store player instances
+var is_client = false
 
 func _ready():
+	# Set up multiplayer spawner
+	multiplayer_spawner.spawn_function = spawn_player
+	
+	# Initially hide the world
+	visible = false
+	
+	# Connect multiplayer signals
+	multiplayer.peer_connected.connect(_on_peer_connected)
+	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
+	
+	# Set up player synchronization
+	if player:
+		player.set_multiplayer_authority(1)  # Server owns the player
+
+func start_multiplayer_host():
+	visible = true
 	generate_platforms()
 	await get_tree().create_timer(0.1).timeout
 	generate_ladders()
+	
+	# Set up host player
+	if player:
+		player.name = str(1)  # Host is always ID 1
+		player.set_multiplayer_authority(1)
+		player.show()
+		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+		
+		# Add host to players dictionary
+		players[1] = player
+		
+		# Make sure the host player is properly set up for replication
+		player.set_multiplayer_authority(1)
+		if not player.is_multiplayer_authority():
+			print("Warning: Host player does not have authority!")
+
+func start_multiplayer_client():
+	visible = true
+	is_client = true
+	
+	# Hide the pre-instantiated player for clients
+	if player:
+		player.hide()
+	
+	# Use the spawner to spawn the player
+	multiplayer_spawner.spawn({"id": multiplayer.get_unique_id()})
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+
+func spawn_player(data):
+	var new_player = load("res://player.tscn").instantiate()
+	var peer_id = data.id
+	
+	print("Map: Attempting to spawn player with peer ID: ", peer_id)
+	print("Map: Current players: ", players.keys())
+	
+	# Ensure we don't create duplicate players
+	if players.has(peer_id):
+		print("Map: Player with peer ID ", peer_id, " already exists")
+		return players[peer_id]
+	
+	new_player.name = str(peer_id)
+	new_player.position = Vector3(0, 1.27678, 0)  # Initial spawn position
+	
+	# Set up multiplayer properties before adding to scene
+	new_player.set_multiplayer_authority(peer_id)
+	
+	# Add to scene tree
+	add_child(new_player, true)  # true for force_readable_name
+	
+	# Store in players dictionary
+	players[peer_id] = new_player
+	
+	print("Map: Successfully spawned player with peer ID: ", peer_id)
+	print("Map: Player authority: ", new_player.get_multiplayer_authority())
+	return new_player
+
+func _on_peer_connected(id: int):
+	print("Map: Peer connected signal received for ID: ", id)
+	print("Map: Is server: ", multiplayer.is_server())
+	print("Map: My unique ID: ", multiplayer.get_unique_id())
+	
+	# Only handle peer connection on server
+	if multiplayer.is_server():
+		print("Map: Server received new peer connection: ", id)
+
+func _on_peer_disconnected(id: int):
+	print("Map: Peer disconnected signal received for ID: ", id)
+	
+	# Clean up the player
+	if players.has(id):
+		players[id].queue_free()
+		players.erase(id)
 
 func generate_ladders():
 	var platforms = get_tree().get_nodes_in_group("platform") + get_tree().get_nodes_in_group("ice")
@@ -92,9 +181,14 @@ func _position_within_bounds(position: Vector3) -> bool:
 	
 	return (platform_min_x >= min_x_pos and platform_max_x <= max_x_pos and platform_min_z >= min_z_pos and platform_max_z <= max_z_pos)
 
-func add_player(): #instantiate player when menu button clicked
-	var player = player.instantiate() #
-	print("added player!")
+func _add_player(id = 1):
+	
+	var new_player = load("res://player.tscn").instantiate()
+	new_player.name = str(id)
+	new_player.position = Vector3(0, 1.27678, 0)  # Initial spawn position
+	add_child(new_player)
+	print("Added player: ", new_player.name)
+	return new_player
 
 func _clamp_position_to_bounds(position: Vector3) -> Vector3:
 	# Clamp the position to ensure the platform stays within bounds
@@ -229,38 +323,42 @@ func generate_platforms():
 		})
 		last_position = new_position
 
+func _process(delta: float) -> void:
+	if visible:  # Only check win condition if world is visible
+		checkWin()
+	#lava.rise()
+
 func checkWin():
+	if not multiplayer.is_server():
+		return
+		
 	# Get all platforms and find the highest one
 	var platforms = get_tree().get_nodes_in_group("platform") + get_tree().get_nodes_in_group("ice")
 	
 	if platforms.size() == 0:
-		return  # No platforms to check
+		return
 	
 	# Find the highest platform
 	var highest_platform = null
 	for platform in platforms:
-		if platform and is_instance_valid(platform):  # Check if platform is valid
+		if platform and is_instance_valid(platform):
 			if highest_platform == null or platform.global_position.y > highest_platform.global_position.y:
 				highest_platform = platform
 	
 	if highest_platform == null:
-		return  # No valid platforms found
+		return
 	
 	# Check if player is within the area of the highest platform
 	var player_pos = player.global_position
 	var platform_pos = highest_platform.global_position
 	
-	# Check if player is within platform bounds (horizontally)
 	var x_distance = abs(player_pos.x - platform_pos.x)
 	var z_distance = abs(player_pos.z - platform_pos.z)
-	
-	# Check if player is close enough vertically (standing on or near the platform)
 	var y_distance = abs(player_pos.y - platform_pos.y)
 	
-	# Player wins if they're within the platform area and close enough vertically
 	if (x_distance <= platform_half_width and 
 		z_distance <= platform_half_depth and 
-		y_distance <= 3.0):  # 3.0 units vertical tolerance
+		y_distance <= 3.0):
 		if has_node("Stats"):
 			var stats = get_node("Stats")
 			stats.record_clear()
@@ -269,4 +367,15 @@ func checkWin():
 
 func _on_lava_body_entered(body: Node3D) -> void:
 	if body == player:
+		if multiplayer.is_server():
+			# Handle death on server
+			get_tree().change_scene_to_file("res://death_screen.tscn")
+		else:
+			pass
+			# Notify server of death
+			#rpc_id(1, "_on_player_death")
+
+#@rpc("any_peer", "call_local")
+func _on_player_death():
+	if multiplayer.is_server():
 		get_tree().change_scene_to_file("res://death_screen.tscn")

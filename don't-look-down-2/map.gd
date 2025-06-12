@@ -31,8 +31,10 @@ var players = {}  # Dictionary to store player instances
 var is_client = false
 
 func _ready():
+	print("Map: _ready called")
 	# Set up multiplayer spawner
 	multiplayer_spawner.spawn_function = spawn_player
+	print("Map: Spawn function set")
 	
 	# Initially hide the world
 	visible = false
@@ -40,9 +42,11 @@ func _ready():
 	# Connect multiplayer signals
 	multiplayer.peer_connected.connect(_on_peer_connected)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
+	print("Map: Multiplayer signals connected")
 	
 	# Set up player synchronization
 	if player:
+		print("Map: Setting up initial player authority")
 		player.set_multiplayer_authority(1)  # Server owns the player
 
 func start_multiplayer_host():
@@ -67,23 +71,44 @@ func start_multiplayer_host():
 			print("Warning: Host player does not have authority!")
 
 func start_multiplayer_client():
+	print("Map: Starting multiplayer client")
 	visible = true
 	is_client = true
 	
 	# Hide the pre-instantiated player for clients
 	if player:
+		print("Map: Hiding pre-instantiated player")
 		player.hide()
 	
+	print("Map: Spawning client player with ID: ", multiplayer.get_unique_id())
 	# Use the spawner to spawn the player
-	multiplayer_spawner.spawn({"id": multiplayer.get_unique_id()})
+	var spawn_data = {"id": multiplayer.get_unique_id()}
+	print("Map: Spawn data: ", spawn_data)
+	
+	# Request spawn from server
+	if multiplayer.is_server():
+		spawn_player(spawn_data)
+	else:
+		rpc_id(1, "request_player_spawn", spawn_data)
+	
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	print("Map: Client player spawn requested")
+
+@rpc("any_peer", "reliable")
+func request_player_spawn(data):
+	print("Map: Received spawn request from peer: ", multiplayer.get_remote_sender_id())
+	if multiplayer.is_server():
+		spawn_player(data)
 
 func spawn_player(data):
+	print("Map: spawn_player called with data: ", data)
 	var new_player = load("res://player.tscn").instantiate()
 	var peer_id = data.id
 	
 	print("Map: Attempting to spawn player with peer ID: ", peer_id)
 	print("Map: Current players: ", players.keys())
+	print("Map: Is server: ", multiplayer.is_server())
+	print("Map: My unique ID: ", multiplayer.get_unique_id())
 	
 	# Ensure we don't create duplicate players
 	if players.has(peer_id):
@@ -96,6 +121,7 @@ func spawn_player(data):
 	# Set up multiplayer properties before adding to scene
 	new_player.set_multiplayer_authority(peer_id)
 	
+	print("Map: Adding player to scene tree with name: ", new_player.name)
 	# Add to scene tree
 	add_child(new_player, true)  # true for force_readable_name
 	
@@ -104,6 +130,7 @@ func spawn_player(data):
 	
 	print("Map: Successfully spawned player with peer ID: ", peer_id)
 	print("Map: Player authority: ", new_player.get_multiplayer_authority())
+	print("Map: Player is in scene tree: ", is_instance_valid(new_player) and new_player.is_inside_tree())
 	return new_player
 
 func _on_peer_connected(id: int):

@@ -21,23 +21,29 @@ var is_on_ladder = false
 @onready var synchronizer = $MultiplayerSynchronizer
 
 func _ready(): 
+	print("Player: _ready called")
+	print("Player: Name: ", name)
+	print("Player: Authority: ", is_multiplayer_authority())
+	print("Player: Is in tree: ", is_inside_tree())
+	
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
-	print("Player ready! Authority: ", is_multiplayer_authority())
 	
 	# Only show camera and enable input for local player
 	if is_multiplayer_authority():
+		print("Player: Setting up local player")
 		camera.current = true
 		set_process_input(true)
 		set_physics_process(true)
 	else:
+		print("Player: Setting up remote player")
 		camera.current = false
 		set_process_input(false)
 		set_physics_process(false)
 	
 	if has_node("/root/Stats"):
-		print("Stats node found in player!")
+		print("Player: Stats node found")
 	else:
-		print("WARNING: Stats node not found in player!")
+		print("Player: WARNING: Stats node not found")
 
 func _unhandled_input(event):
 	if not is_multiplayer_authority():

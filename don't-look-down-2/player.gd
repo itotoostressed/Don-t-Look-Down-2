@@ -25,8 +25,7 @@ func _ready():
 	print("Player: Name: ", name)
 	print("Player: Authority: ", is_multiplayer_authority())
 	print("Player: Is in tree: ", is_inside_tree())
-	
-	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	print("Player: My unique ID: ", multiplayer.get_unique_id())
 	
 	# Only show camera and enable input for local player
 	if is_multiplayer_authority():
@@ -34,6 +33,7 @@ func _ready():
 		camera.current = true
 		set_process_input(true)
 		set_physics_process(true)
+		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	else:
 		print("Player: Setting up remote player")
 		camera.current = false

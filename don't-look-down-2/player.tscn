@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3 uid="uid://ctsll3aira0xk"]
+[gd_scene load_steps=5 format=3 uid="uid://ctsll3aira0xk"]
 
 [ext_resource type="Script" uid="uid://c6e1jv05u7gx8" path="res://player.gd" id="1_4flbx"]
 
@@ -25,6 +25,12 @@ properties/4/replication_mode = 1
 properties/5/path = NodePath("Head/Camera3D:current")
 properties/5/spawn = true
 properties/5/replication_mode = 1
+properties/6/path = NodePath(".:is_on_ladder")
+properties/6/spawn = true
+properties/6/replication_mode = 1
+properties/7/path = NodePath(".:numJumps")
+properties/7/spawn = true
+properties/7/replication_mode = 1
 
 [node name="Player" type="CharacterBody3D" groups=["players"]]
 script = ExtResource("1_4flbx")
@@ -40,7 +46,6 @@ shape = SubResource("CapsuleShape3D_i3pqv")
 
 [node name="Camera3D" type="Camera3D" parent="Head"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.600013, 0)
-current = true
 
 [node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
 replication_config = SubResource("SceneReplicationConfig_4flbx")

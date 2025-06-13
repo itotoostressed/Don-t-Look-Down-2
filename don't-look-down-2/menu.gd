@@ -6,9 +6,7 @@ extends Control
 @onready var start_button = $CenterContainer/VBoxContainer/ButtonContainer/StartButton
 @onready var host_button = $CenterContainer/VBoxContainer/ButtonContainer/HostButton
 @onready var join_button = $CenterContainer/VBoxContainer/ButtonContainer/JoinButton
-@onready var world = get_parent().get_node("World")
 
-var peer = ENetMultiplayerPeer.new()
 var is_connecting = false
 
 # Called when the node enters the scene tree for the first time.
@@ -41,14 +39,9 @@ func _ready() -> void:
 
 func _on_peer_connected(id: int):
 	print("Peer connected signal received for ID: ", id)
-	print("Current peer ID: ", peer.get_unique_id())
-	print("Current multiplayer ID: ", multiplayer.get_unique_id())
-	# Remove direct player spawning - let the map handle it
 
 func _on_peer_disconnected(id: int):
 	print("Peer disconnected signal received for ID: ", id)
-	if world.has_node(str(id)):
-		world.get_node(str(id)).queue_free()
 
 func _on_connected_to_server():
 	print("Connected to server!")
@@ -61,7 +54,7 @@ func _on_server_disconnected():
 func _on_start_button_pressed() -> void:
 	hide()  # Hide menu
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)  # Capture mouse for game
-	world.start_single_player()  # Start single player mode
+	get_node("/root/NetworkHandler").start_single_player()
 
 func _on_stats_button_pressed() -> void:
 	# Toggle stats panel visibility
@@ -77,25 +70,7 @@ func _on_host_button_pressed() -> void:
 	# Start as host
 	hide()  # Hide menu
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)  # Capture mouse for game
-	
-	# Close any existing connection
-	if peer.get_connection_status() != MultiplayerPeer.CONNECTION_DISCONNECTED:
-		peer.close()
-	
-	print("Creating server...")
-	# Create server with specific configuration
-	peer.create_server(135, 4)  # Port 135, max 4 players
-	multiplayer.multiplayer_peer = peer
-	
-	# Wait for server to be ready
-	await get_tree().create_timer(0.1).timeout
-	
-	print("Server started")
-	print("Host peer ID: ", peer.get_unique_id())
-	print("Host multiplayer ID: ", multiplayer.get_unique_id())
-	
-	world.start_multiplayer_host()  # Start as host
-	
+	get_node("/root/NetworkHandler").start_host()
 	is_connecting = false
 
 func _on_join_button_pressed() -> void:
@@ -107,31 +82,7 @@ func _on_join_button_pressed() -> void:
 	# Join as client
 	hide()  # Hide menu
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)  # Capture mouse for game
-	
-	# Close any existing connection
-	if peer.get_connection_status() != MultiplayerPeer.CONNECTION_DISCONNECTED:
-		peer.close()
-	
-	print("Creating client...")
-	# Create client with specific configuration
-	peer.create_client("localhost", 135)
-	multiplayer.multiplayer_peer = peer
-	
-	print("Client started")
-	print("Client peer ID: ", peer.get_unique_id())
-	print("Client multiplayer ID: ", multiplayer.get_unique_id())
-	
-	# Wait for connection before starting client
-	await get_tree().create_timer(0.5).timeout
-	
-	# Only start client if we're actually connected
-	if peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
-		world.start_multiplayer_client()  # Start as client
-	else:
-		print("Failed to connect to server")
-		show()  # Show menu again
-		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-	
+	get_node("/root/NetworkHandler").start_client()
 	is_connecting = false
 
 func _on_stats_updated() -> void:

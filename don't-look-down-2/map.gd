@@ -202,6 +202,11 @@ func setup_local_player(player_id: int, player_path: String = ""):
 		# Make sure the world is visible
 		visible = true
 		print("Map: World visibility set to: ", visible)
+		
+		# Notify server that player setup is complete
+		if not multiplayer.is_server():
+			print("Map: Notifying server of player setup completion")
+			rpc_id(1, "player_setup_complete", {"id": player_id})
 	else:
 		print("Map: Could not find player, will try again")
 		print("Map: Looking for player with name: ", str(player_id))
@@ -240,6 +245,10 @@ func spawn_player(data):
 		print("Map: Player with peer ID ", peer_id, " already exists")
 		return players[peer_id]
 	
+	if not new_player:
+		print("Map: Error - Failed to instantiate player scene")
+		return null
+		
 	new_player.name = str(peer_id)
 	new_player.position = Vector3(0, 1.27678, 0)  # Initial spawn position
 	
@@ -294,8 +303,18 @@ func _on_peer_disconnected(id: int):
 	
 	# Clean up the player
 	if players.has(id):
-		players[id].queue_free()
-		players.erase(id)
+		print("Map: Cleaning up disconnected player: ", id)
+		var disconnected_player = players[id]
+		if is_instance_valid(disconnected_player):
+			# Remove from scene tree
+			if disconnected_player.is_inside_tree():
+				disconnected_player.queue_free()
+			# Remove from players dictionary
+			players.erase(id)
+			print("Map: Successfully cleaned up player: ", id)
+		else:
+			print("Map: Player instance was already invalid")
+			players.erase(id)
 
 func generate_ladders():
 	var platforms = get_tree().get_nodes_in_group("platform") + get_tree().get_nodes_in_group("ice")
@@ -539,17 +558,25 @@ func checkWin():
 			stats.save_stats()
 		get_tree().change_scene_to_file("res://win_screen.tscn")
 
+@rpc("any_peer", "reliable")
+func _on_player_death():
+	if multiplayer.is_server():
+		get_tree().change_scene_to_file("res://death_screen.tscn")
+
+@rpc("any_peer", "reliable")
+func player_setup_complete(data):
+	print("Map: Received player_setup_complete from peer: ", multiplayer.get_remote_sender_id())
+	if multiplayer.is_server():
+		print("Map: Server acknowledging player setup complete for ID: ", data.id)
+		# Server can now consider this player fully set up
+		if players.has(data.id):
+			print("Map: Player ", data.id, " is now fully set up")
+
 func _on_lava_body_entered(body: Node3D) -> void:
 	if body == player:
 		if multiplayer.is_server():
 			# Handle death on server
 			get_tree().change_scene_to_file("res://death_screen.tscn")
 		else:
-			pass
 			# Notify server of death
-			#rpc_id(1, "_on_player_death")
-
-#@rpc("any_peer", "call_local")
-func _on_player_death():
-	if multiplayer.is_server():
-		get_tree().change_scene_to_file("res://death_screen.tscn")
+			rpc_id(1, "_on_player_death")

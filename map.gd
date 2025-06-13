@@ -3,6 +3,7 @@ extends Node3D
 @onready var player_scene = preload("res://Player.tscn")  # Make sure this path matches your player scene
 @onready var lava = $lava
 @onready var stats = $Stats
+@onready var multiplayer_spawner = $MultiplayerSpawner
 
 var platformScene = load("res://platform.tscn")
 var ladderScene = load("res://ladder.tscn")
@@ -26,37 +27,132 @@ const LADDER_HEIGHT = 7.85
 var changeDirX = false
 var changeDirZ = false
 
+var players = {}
+
 func _ready():
-	# Set up multiplayer
+	print("Map: _ready called")
+	
+	# Set up MultiplayerSpawner
+	multiplayer_spawner.spawn_function = spawn_player
+	print("Map: MultiplayerSpawner spawn function set")
+	
+	# Connect MultiplayerSpawner signals
+	multiplayer_spawner.spawned.connect(_on_spawned)
+	print("Map: MultiplayerSpawner signals connected")
+	
+	# Initially hide the world
+	visible = false
+	
+	# Connect multiplayer signals
+	multiplayer.peer_connected.connect(_on_peer_connected)
+	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
+	print("Map: Multiplayer signals connected")
+	
+	# Only generate world on server
 	if multiplayer.is_server():
+		print("Map: Setting up server world")
 		generate_platforms()
 		await get_tree().create_timer(0.1).timeout
 		generate_ladders()
-	
-	# Set up player
-	if multiplayer.is_server():
-		# Spawn the server's player
-		spawn_player.rpc_id(1, 1)
-	elif multiplayer.is_client():
+		
+		# Spawn server's player directly
+		var server_player = spawn_player({"id": 1})
+		if server_player:
+			print("Map: Server player spawned successfully")
+	else:
+		print("Map: Setting up client")
 		# Request player spawn from server
-		request_player_spawn.rpc_id(1)
+		rpc_id(1, "request_player_spawn")
 
 @rpc("any_peer")
 func request_player_spawn():
 	var peer_id = multiplayer.get_remote_sender_id()
-	spawn_player.rpc_id(peer_id, peer_id)
+	print("Map: Received spawn request from peer: ", peer_id)
+	multiplayer_spawner.spawn({"id": peer_id})
 
-@rpc("any_peer", "call_local")
-func spawn_player(id: int):
-	var new_player = player_scene.instantiate()
-	new_player.name = str(id)
-	new_player.set_multiplayer_authority(id)  # Set the authority to the correct peer
-	add_child(new_player, true)  # true for force_readable_name
+func spawn_player(data):
+	print("Map: spawn_player called with data: ", data)
+	var peer_id = data.id
 	
-	# If this is our player, set up input
-	if id == multiplayer.get_unique_id():
-		new_player.set_process_input(true)
-		new_player.add_to_group("players")
+	print("Map: Attempting to spawn player with peer ID: ", peer_id)
+	print("Map: Current players: ", players.keys())
+	print("Map: Is server: ", multiplayer.is_server())
+	print("Map: My unique ID: ", multiplayer.get_unique_id())
+	
+	# Ensure we don't create duplicate players
+	if players.has(peer_id):
+		print("Map: Player with peer ID ", peer_id, " already exists")
+		return players[peer_id]
+	
+	# Create new player instance
+	print("Map: Creating new player instance for peer ID: ", peer_id)
+	var new_player = load("res://player.tscn").instantiate()
+	if not new_player:
+		print("Map: Error - Failed to instantiate player scene")
+		return null
+	
+	# Set up player
+	new_player.name = str(peer_id)
+	new_player.position = Vector3(0, 1.27678, 0)  # Initial spawn position
+	
+	# Add to scene tree
+	print("Map: Adding player to scene tree with name: ", new_player.name)
+	add_child(new_player, true)
+	
+	# Set authority explicitly
+	if peer_id == 1:  # Server's player
+		new_player.set_multiplayer_authority(1)
+		print("Map: Set server player authority to 1")
+	else:  # Client's player
+		new_player.set_multiplayer_authority(peer_id)
+		print("Map: Set client player authority to ", peer_id)
+	
+	# Store in players dictionary
+	players[peer_id] = new_player
+	
+	print("Map: Successfully spawned player with peer ID: ", peer_id)
+	print("Map: Player authority: ", new_player.get_multiplayer_authority())
+	print("Map: Player is in tree: ", is_instance_valid(new_player) and new_player.is_inside_tree())
+	print("Map: Player name: ", new_player.name)
+	print("Map: Player path: ", new_player.get_path())
+	
+	return new_player
+
+func _on_spawned(node):
+	print("Map: Node spawned: ", node.name)
+	print("Map: Node path: ", node.get_path())
+	print("Map: Node authority: ", node.get_multiplayer_authority())
+	print("Map: Is multiplayer authority: ", node.is_multiplayer_authority())
+	
+	# If this is a player node
+	if node.is_in_group("players"):
+		print("Map: Spawned node is a player")
+		var player_id = int(node.name)
+		players[player_id] = node
+		
+		# If this is our local player
+		if player_id == multiplayer.get_unique_id():
+			print("Map: This is our local player")
+			player = node
+			
+			# Make sure the world is visible
+			visible = true
+			print("Map: World visibility set to: ", visible)
+
+func _on_peer_connected(id: int):
+	print("Map: Peer connected: ", id)
+	if multiplayer.is_server():
+		print("Map: Server received new peer connection: ", id)
+
+func _on_peer_disconnected(id: int):
+	print("Map: Peer disconnected: ", id)
+	if players.has(id):
+		print("Map: Cleaning up disconnected player: ", id)
+		var disconnected_player = players[id]
+		if is_instance_valid(disconnected_player):
+			disconnected_player.queue_free()
+		players.erase(id)
+		print("Map: Successfully cleaned up player: ", id)
 
 func _process(delta: float) -> void:
 	checkWin()

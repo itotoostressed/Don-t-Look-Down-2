@@ -19,31 +19,43 @@ var is_on_ladder = false
 @onready var head = $Head
 @onready var camera = $Head/Camera3D
 @onready var synchronizer = $MultiplayerSynchronizer
+@onready var mesh = $MeshInstance3D
 
-func _ready(): 
+func _enter_tree():
+	# Authority is now set in map.gd's spawn_player function
+	print("Player: Entered tree with name: ", name)
+	print("Player: Initial authority: ", get_multiplayer_authority())
+
+func _ready():
 	print("Player: _ready called")
 	print("Player: Name: ", name)
-	print("Player: Authority: ", is_multiplayer_authority())
-	print("Player: Is in tree: ", is_inside_tree())
+	print("Player: Authority: ", get_multiplayer_authority())
+	print("Player: Is multiplayer authority: ", is_multiplayer_authority())
 	print("Player: My unique ID: ", multiplayer.get_unique_id())
 	
-	# Only show camera and enable input for local player
+	# Only enable input and camera for the local player
 	if is_multiplayer_authority():
-		print("Player: Setting up local player")
-		camera.current = true
+		print("Player: This is our local player")
+		# Set up camera
+		if camera:
+			camera.current = true
+			print("Player: Camera set as current")
+		
+		# Enable input and physics processing
 		set_process_input(true)
 		set_physics_process(true)
-		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+		print("Player: Input and physics processing enabled")
 	else:
-		print("Player: Setting up remote player")
-		camera.current = false
+		print("Player: This is a remote player")
+		# Disable camera for remote players
+		if camera:
+			camera.current = false
+			print("Player: Camera disabled for remote player")
+		
+		# Disable input and physics processing for remote players
 		set_process_input(false)
 		set_physics_process(false)
-	
-	if has_node("/root/Stats"):
-		print("Player: Stats node found")
-	else:
-		print("Player: WARNING: Stats node not found")
+		print("Player: Input and physics processing disabled for remote player")
 
 func _unhandled_input(event):
 	if not is_multiplayer_authority():
@@ -109,58 +121,24 @@ func _physics_process(delta: float) -> void:
 			FRICTION = 1
 	
 	# Improved jumping with coyote time
-	if Input.is_action_just_pressed("jump") and not is_on_ladder:
-		# Can jump if: on ground, within coyote time, or have jumps left
-		if (is_on_floor() or coyote_timer > 0 or numJumps < maxJumps):
-			if not is_on_floor() and coyote_timer <= 0:
-				numJumps += 1  # Only count as air jump if not on ground/coyote
-			
-			velocity.y = JUMP_VELOCITY
-			coyote_timer = 0       # Use up coyote time
-			print("Player jumped! Recording jump...")
-			if has_node("/root/Stats"):
-				var stats = get_node("/root/Stats")
-				print("Current stats before jump - Jumps: ", stats.jumps, " Deaths: ", stats.deaths, " Clears: ", stats.clears)
-				stats.record_jump()
-				print("Jump recorded! New stats - Jumps: ", stats.jumps, " Deaths: ", stats.deaths, " Clears: ", stats.clears)
-				# Verify the save
-				stats.save_stats()
-				print("Stats saved after jump")
-			else:
-				print("ERROR: Stats node not found when trying to record jump!")
-			emit_signal("jumped")  # Emit the jump signal
+	if Input.is_action_just_pressed("jump") and (is_on_floor() or coyote_timer > 0 or numJumps < maxJumps):
+		if not is_on_floor() and coyote_timer <= 0:
+			numJumps += 1
+		velocity.y = JUMP_VELOCITY
+		coyote_timer = 0
+		emit_signal("jumped")
 	
-	# Horizontal movement
-	if not is_on_ladder or (was_on_ladder and not is_on_ladder):
-		var input_dir = Input.get_vector("moveLeft", "moveRight", "moveBackward", "moveForward")
-		var direction = Vector3.ZERO
-		
-		var forward = -head.global_transform.basis.z
-		var right = head.global_transform.basis.x
-		
-		direction = forward * input_dir.y + right * input_dir.x
-		direction.y = 0
-		direction = direction.normalized()
-		
-		if direction:
-			velocity.x = direction.x * SPEED
-			velocity.z = direction.z * SPEED
-		else:
-			velocity.x = move_toward(velocity.x, 0, FRICTION)
-			velocity.z = move_toward(velocity.z, 0, FRICTION)
+	# Get input direction
+	var input_dir = Input.get_vector("moveLeft", "moveRight", "moveForward", "moveBackward")
+	var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 	
-	move_and_slide()
-
-func check_win_condition():
-	# Get reference to map node (adjust path if needed)
-	var map = get_parent()  # Assuming player is child of map
-	if map.has_method("checkWin"):
-		map.checkWin()
-
-func _change_to_death_scene():
-	get_tree().change_scene_to_file("res://death_screen.tscn")
-
-func _on_lava_body_entered(body: Node3D) -> void:
-	if body and body.is_in_group("players"):
-		print("player died!")
-		call_deferred("_change_to_death_scene")
+	# Handle movement
+	if direction:
+		velocity.x = direction.x * SPEED
+		velocity.z = direction.z * SPEED
+	else:
+		velocity.x = move_toward(velocity.x, 0, FRICTION)
+		velocity.z = move_toward(velocity.z, 0, FRICTION)
+	
+	# Move the character
+	move_and_slide() 

@@ -2,7 +2,7 @@ extends Node3D
 
 @onready var player = $Player
 @onready var lava = $lava
-@onready var stats = $Stats  # Add reference to Stats node
+@onready var stats = $Stats
 @onready var multiplayer_spawner = $MultiplayerSpawner
 var platformScene = load("res://platform.tscn")
 var ladderScene = load("res://ladder.tscn") # Make sure to load your ladder scene
@@ -32,9 +32,6 @@ var is_client = false
 
 func _ready():
 	print("Map: _ready called")
-	# Set up multiplayer spawner
-	multiplayer_spawner.spawn_function = spawn_player
-	print("Map: Spawn function set")
 	
 	# Initially hide the world
 	visible = false
@@ -48,7 +45,15 @@ func _ready():
 	if multiplayer.is_server():
 		print("Map: Setting up initial player authority")
 		if player:
+			# Move the player to be a child of the Map node if it isn't already
+			if player.get_parent() != self:
+				var original_transform = player.global_transform
+				player.get_parent().remove_child(player)
+				add_child(player)
+				player.global_transform = original_transform
 			player.set_multiplayer_authority(1)  # Server owns the player
+			# Add to players dictionary
+			players[1] = player
 	else:
 		# Remove the pre-instantiated player for clients
 		if player:
@@ -83,49 +88,6 @@ func start_single_player():
 func start_multiplayer_host():
 	print("Map: Starting multiplayer host")
 	visible = true
-	generate_platforms()
-	await get_tree().create_timer(0.1).timeout
-	generate_ladders()
-	
-	# Set up host player
-	if player:
-		player.name = str(1)  # Host is always ID 1
-		player.set_multiplayer_authority(1)
-		player.show()
-		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
-		
-		# Add host to players dictionary
-		players[1] = player
-		
-		# Make sure the host player is properly set up for replication
-		player.set_multiplayer_authority(1)
-		if not player.is_multiplayer_authority():
-			print("Warning: Host player does not have authority!")
-
-func start_multiplayer_client():
-	print("Map: Starting multiplayer client")
-	visible = true
-	is_client = true
-	
-	print("Map: Spawning client player with ID: ", multiplayer.get_unique_id())
-	# Use the spawner to spawn the player
-	var spawn_data = {"id": multiplayer.get_unique_id()}
-	print("Map: Spawn data: ", spawn_data)
-	
-	# Request spawn from server
-	if multiplayer.is_server():
-		print("Map: We are server, spawning directly")
-		spawn_player(spawn_data)
-	else:
-		print("Map: We are client, requesting spawn from server")
-		rpc_id(1, "request_player_spawn", spawn_data)
-	
-	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
-	print("Map: Client player spawn requested")
-	
-	# Make sure the world is visible
-	visible = true
-	print("Map: World visibility set to: ", visible)
 	
 	# Generate platforms and ladders
 	generate_platforms()
@@ -278,10 +240,31 @@ func setup_local_player(player_id: int, player_path: String = ""):
 				print("Map: Requesting spawn from server for player ID: ", player_id)
 				rpc_id(1, "request_player_spawn", {"id": player_id})
 
-@rpc("authority", "reliable")
+func start_multiplayer_client():
+	print("Map: Starting multiplayer client")
+	visible = true
+	is_client = true
+	
+	var client_id = multiplayer.get_unique_id()
+	print("Map: Client ID: ", client_id)
+	
+	# Request player spawn through MultiplayerSpawner
+	var spawn_data = {"id": client_id}
+	print("Map: Requesting player spawn with data: ", spawn_data)
+	multiplayer_spawner.spawn(spawn_data)
+	
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	print("Map: Client player spawn requested")
+	
+	# Generate platforms and ladders
+	generate_platforms()
+	await get_tree().create_timer(0.1).timeout
+	generate_ladders()
+	print("Map: Platforms and ladders generated")
+
+# This function is called by MultiplayerSpawner to spawn players
 func spawn_player(data):
 	print("Map: spawn_player called with data: ", data)
-	var new_player = load("res://player.tscn").instantiate()
 	var peer_id = data.id
 	
 	print("Map: Attempting to spawn player with peer ID: ", peer_id)
@@ -294,16 +277,28 @@ func spawn_player(data):
 		print("Map: Player with peer ID ", peer_id, " already exists")
 		return players[peer_id]
 	
-	new_player.name = str(peer_id)
-	new_player.position = Vector3(0, 1.27678, 0)  # Initial spawn position
+	var new_player = null
 	
-	# Set up multiplayer properties before adding to scene
+	# If this is the server (peer_id == 1) and we have a pre-instantiated player, use it
+	if peer_id == 1 and player != null:
+		print("Map: Using pre-instantiated player for server")
+		new_player = player
+		new_player.name = str(peer_id)
+	else:
+		# For all other cases, create a new player instance
+		print("Map: Creating new player instance for peer ID: ", peer_id)
+		new_player = load("res://player.tscn").instantiate()
+		new_player.name = str(peer_id)
+		new_player.position = Vector3(0, 1.27678, 0)  # Initial spawn position
+	
+	# Set up multiplayer properties
 	print("Map: Setting multiplayer authority for peer ID: ", peer_id)
 	new_player.set_multiplayer_authority(peer_id)
 	
-	print("Map: Adding player to scene tree with name: ", new_player.name)
-	# Add to scene tree with force_readable_name and force_readable
-	add_child(new_player, true)
+	# Only add to scene tree if it's not the pre-instantiated player
+	if new_player != player:
+		print("Map: Adding player to scene tree with name: ", new_player.name)
+		add_child(new_player, true)
 	
 	# Store in players dictionary
 	players[peer_id] = new_player
@@ -607,9 +602,9 @@ func _on_lava_body_entered(body: Node3D) -> void:
 		else:
 			pass
 			# Notify server of death
-			#rpc_id(1, "_on_player_death")
+			rpc_id(1, "_on_player_death")
 
-#@rpc("any_peer", "call_local")
+@rpc("any_peer", "call_local")
 func _on_player_death():
 	if multiplayer.is_server():
 		get_tree().change_scene_to_file("res://death_screen.tscn")

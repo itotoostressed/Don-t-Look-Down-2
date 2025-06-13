@@ -24,7 +24,7 @@ glow_enabled = true
 albedo_texture = ExtResource("2_e0an3")
 uv1_triplanar = true
 
-[node name="Map" type="Node3D"]
+[node name="World" type="Node3D"]
 script = ExtResource("1_p5pve")
 
 [node name="Player" parent="." instance=ExtResource("1_wijl4")]
@@ -57,4 +57,3 @@ transform = Transform3D(2.5259, 0, 0, 0, 2.5259, 0, 0, 0, 2.5259, 0, -18.7825, 0
 [node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="."]
 spawn_path = NodePath(".")
 spawn_limit = 4
-spawn_function = "spawn_player"

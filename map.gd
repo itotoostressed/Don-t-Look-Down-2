@@ -221,7 +221,11 @@ func start_multiplayer_client():
 
 @rpc("any_peer", "call_local")
 func _spawn_player(data: Dictionary) -> Node:
-	print("Map: Spawning player with data: ", data)
+	print("Map: _spawn_player called with data: ", data)
+	print("Map: Current scene path: ", get_path())
+	print("Map: Parent node: ", get_parent().name if get_parent() else "No parent")
+	print("Map: Is server: ", multiplayer.is_server())
+	print("Map: My unique ID: ", multiplayer.get_unique_id())
 	var id = data.id
 	var new_player = player_scene.instantiate()
 	new_player.name = str(id)
@@ -234,17 +238,25 @@ func _spawn_player(data: Dictionary) -> Node:
 	synchronizer.replication_config = new_player.get_node("MultiplayerSynchronizer").replication_config
 	new_player.add_child(synchronizer)
 	
-	# Add to scene tree BEFORE setting authority
-	add_child(new_player, true)
+	# Use call_deferred for node operations
+	print("Map: Adding player to scene tree")
+	call_deferred("add_child", new_player, true)
+	
+	# Wait a frame to ensure the node is in the tree
+	await get_tree().process_frame
 	
 	# Set authority AFTER adding to tree
 	new_player.set_multiplayer_authority(id)
 	print("Map: Player authority set to: ", new_player.get_multiplayer_authority())
 	print("Map: Player has authority: ", new_player.is_multiplayer_authority())
+	print("Map: My unique ID: ", multiplayer.get_unique_id())
+	print("Map: Player path after adding: ", new_player.get_path())
+	print("Map: Player parent: ", new_player.get_parent().name if new_player.get_parent() else "No parent")
 	
 	# Set up player based on whether it's local or remote
 	if id == multiplayer.get_unique_id():
 		print("Map: Setting up local player controls")
+		print("Map: Local player authority check - ID: ", id, " | My ID: ", multiplayer.get_unique_id())
 		new_player.set_process_input(true)
 		new_player.set_physics_process(true)
 		# Set camera for local player
@@ -252,6 +264,7 @@ func _spawn_player(data: Dictionary) -> Node:
 			new_player.get_node("Head/Camera3D").current = true
 	else:
 		print("Map: Setting up remote player (no input/camera)")
+		print("Map: Remote player authority check - ID: ", id, " | My ID: ", multiplayer.get_unique_id())
 		new_player.set_process_input(false)
 		new_player.set_physics_process(false)
 		# Disable camera for remote players
@@ -269,17 +282,33 @@ func _spawn_player(data: Dictionary) -> Node:
 	if id == 1 and multiplayer.is_server():
 		player = new_player
 	
+	# Notify that player setup is complete
+	if id == multiplayer.get_unique_id():
+		print("Map: Notifying server of player setup completion")
+		player_setup_complete.rpc_id(1, {"id": id})
+	
 	return new_player
 
 @rpc("any_peer", "reliable")
 func request_player_spawn(data):
 	print("Map: Received spawn request from peer: ", multiplayer.get_remote_sender_id())
+	print("Map: Current scene path: ", get_path())
+	print("Map: Parent node: ", get_parent().name if get_parent() else "No parent")
+	print("Map: Is server: ", multiplayer.is_server())
+	print("Map: My unique ID: ", multiplayer.get_unique_id())
 	if multiplayer.is_server():
 		print("Map: Server handling spawn request")
 		print("Map: Spawn data: ", data)
+		print("Map: MultiplayerSpawner path: ", $MultiplayerSpawner.get_path())
+		print("Map: MultiplayerSpawner spawn path: ", $MultiplayerSpawner.spawn_path)
+		print("Map: MultiplayerSpawner spawnable scenes: ", $MultiplayerSpawner._spawnable_scenes)
 		# Let MultiplayerSpawner handle the spawning
 		$MultiplayerSpawner.spawn(data)
 		print("Map: Spawn request handled")
+	else:
+		print("Map: Client received spawn request - this shouldn't happen")
+		print("Map: Client unique ID: ", multiplayer.get_unique_id())
+		print("Map: Requested spawn ID: ", data.id)
 
 @rpc("reliable")
 func player_ready(data):

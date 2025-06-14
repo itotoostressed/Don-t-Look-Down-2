@@ -25,8 +25,14 @@ func _enter_tree():
 	# Set authority based on node name
 	var peer_id = name.to_int()
 	print("[AUTHORITY] Player entering tree - Name: ", name, " | Peer ID: ", peer_id, " | My ID: ", multiplayer.get_unique_id())
+	
+	# Wait a frame to ensure proper node setup
+	await get_tree().process_frame
+	
+	# Set authority
 	set_multiplayer_authority(peer_id)
 	print("[AUTHORITY] Authority set to: ", get_multiplayer_authority())
+	print("[AUTHORITY] Has authority: ", is_multiplayer_authority())
 	
 	# Ensure we're properly set up for networking
 	if synchronizer:

@@ -22,23 +22,28 @@ var is_on_ladder = false
 @onready var mesh = $MeshInstance3D
 
 func _enter_tree():
-	# Get the peer ID from the node name
-	var peer_id = int(name)
+	# Set authority based on node name
+	var peer_id = name.to_int()
+	print("Player: _enter_tree called")
 	print("Player: Node name: ", name)
 	print("Player: Setting authority to ", peer_id)
 	set_multiplayer_authority(peer_id)
 	print("Player: Authority set to: ", get_multiplayer_authority())
+	
+	# Ensure we're properly set up for networking
+	if synchronizer:
+		synchronizer.set_multiplayer_authority(peer_id)
 
 func _ready():
 	print("Player: _ready called")
-	print("Player: Node name: ", name)
+	print("Player: Name: ", name)
 	print("Player: Authority: ", get_multiplayer_authority())
-	print("Player: Is multiplayer authority: ", is_multiplayer_authority())
+	print("Player: Is in tree: ", is_inside_tree())
 	print("Player: My unique ID: ", multiplayer.get_unique_id())
 	
 	# Only enable input and camera for the local player
 	if is_multiplayer_authority():
-		print("Player: This is our local player")
+		print("Player: Setting up local player")
 		# Set up camera
 		if camera:
 			camera.current = true
@@ -48,8 +53,14 @@ func _ready():
 		set_process_input(true)
 		set_physics_process(true)
 		print("Player: Input and physics processing enabled")
+		
+		# Set mouse mode
+		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+		
+		# Ensure we start at a valid position
+		position.y = 1.0  # Start slightly above ground
 	else:
-		print("Player: This is a remote player")
+		print("Player: Setting up remote player")
 		# Disable camera for remote players
 		if camera:
 			camera.current = false
@@ -59,6 +70,11 @@ func _ready():
 		set_process_input(false)
 		set_physics_process(false)
 		print("Player: Input and physics processing disabled for remote player")
+	
+	if has_node("/root/Stats"):
+		print("Player: Stats node found")
+	else:
+		print("Player: WARNING: Stats node not found")
 
 func _unhandled_input(event):
 	if not is_multiplayer_authority():
@@ -124,24 +140,48 @@ func _physics_process(delta: float) -> void:
 			FRICTION = 1
 	
 	# Improved jumping with coyote time
-	if Input.is_action_just_pressed("jump") and (is_on_floor() or coyote_timer > 0 or numJumps < maxJumps):
-		if not is_on_floor() and coyote_timer <= 0:
-			numJumps += 1
-		velocity.y = JUMP_VELOCITY
-		coyote_timer = 0
-		emit_signal("jumped")
+	if Input.is_action_just_pressed("jump") and not is_on_ladder:
+		# Can jump if: on ground, within coyote time, or have jumps left
+		if (is_on_floor() or coyote_timer > 0 or numJumps < maxJumps):
+			if not is_on_floor() and coyote_timer <= 0:
+				numJumps += 1  # Only count as air jump if not on ground/coyote
+			
+			velocity.y = JUMP_VELOCITY
+			coyote_timer = 0       # Use up coyote time
+			print("Player jumped! Recording jump...")
+			if has_node("/root/Stats"):
+				var stats = get_node("/root/Stats")
+				print("Current stats before jump - Jumps: ", stats.jumps, " Deaths: ", stats.deaths, " Clears: ", stats.clears)
+				stats.record_jump()
+				print("Jump recorded! New stats - Jumps: ", stats.jumps, " Deaths: ", stats.deaths, " Clears: ", stats.clears)
+				# Verify the save
+				stats.save_stats()
+				print("Stats saved after jump")
+			else:
+				print("ERROR: Stats node not found when trying to record jump!")
+			emit_signal("jumped")  # Emit the jump signal
 	
-	# Get input direction
-	var input_dir = Input.get_vector("moveLeft", "moveRight", "moveForward", "moveBackward")
-	var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	# Horizontal movement
+	if not is_on_ladder or (was_on_ladder and not is_on_ladder):
+		var input_dir = Input.get_vector("moveLeft", "moveRight", "moveBackward", "moveForward")
+		var direction = Vector3.ZERO
+		
+		var forward = -head.global_transform.basis.z
+		var right = head.global_transform.basis.x
+		
+		direction = forward * input_dir.y + right * input_dir.x
+		direction.y = 0
+		direction = direction.normalized()
+		
+		if direction:
+			velocity.x = direction.x * SPEED
+			velocity.z = direction.z * SPEED
+		else:
+			velocity.x = move_toward(velocity.x, 0, FRICTION)
+			velocity.z = move_toward(velocity.z, 0, FRICTION)
 	
-	# Handle movement
-	if direction:
-		velocity.x = direction.x * SPEED
-		velocity.z = direction.z * SPEED
-	else:
-		velocity.x = move_toward(velocity.x, 0, FRICTION)
-		velocity.z = move_toward(velocity.z, 0, FRICTION)
+	move_and_slide()
 	
-	# Move the character
-	move_and_slide() 
+	# Ensure we don't fall through the ground
+	if position.y < 0:
+		position.y = 1.0 

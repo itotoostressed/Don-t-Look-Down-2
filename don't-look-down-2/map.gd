@@ -49,9 +49,9 @@ func _ready():
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 	print("Map: Multiplayer signals connected")
 	
-	# Only set up initial player authority if we're the server
+	# Only set up initial player if we're the server
 	if multiplayer.is_server():
-		print("Map: Setting up initial player authority")
+		print("Map: Setting up initial player")
 		if player:
 			# Move the player to be a child of the Map node if it isn't already
 			if player.get_parent() != self:
@@ -59,12 +59,9 @@ func _ready():
 				player.get_parent().remove_child(player)
 				add_child(player)
 				player.global_transform = original_transform
-			player.set_multiplayer_authority(1)  # Server owns the player
+			player.name = str(1)  # Set name to trigger _enter_tree()
 			# Add to players dictionary
 			players[1] = player
-			# Set up server's camera
-			if player.has_node("Head/Camera3D"):
-				player.get_node("Head/Camera3D").current = true
 	else:
 		# Remove the pre-instantiated player for clients
 		if player:
@@ -86,8 +83,7 @@ func start_single_player():
 	
 	# Set up single player
 	if player:
-		player.name = str(1)
-		player.set_multiplayer_authority(1)
+		player.name = str(1)  # Set name to trigger _enter_tree()
 		player.show()
 		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 		
@@ -100,25 +96,37 @@ func start_multiplayer_host():
 	print("Map: Starting multiplayer host")
 	visible = true
 	
-	# Generate platforms and ladders
-	generate_platforms()
-	await get_tree().create_timer(0.1).timeout
-	generate_ladders()
+	# Generate platforms and ladders only on server
+	if multiplayer.is_server():
+		print("Map: Server generating world")
+		generate_platforms()
+		await get_tree().create_timer(0.1).timeout
+		generate_ladders()
 	
 	# Set up host player
 	if player:
-		player.name = str(1)  # Host is always ID 1
-		player.set_multiplayer_authority(1)
+		print("Map: Setting up host player")
+		# Remove the player from its current parent
+		if player.get_parent():
+			player.get_parent().remove_child(player)
+		
+		# Add the player as a child of Map
+		add_child(player)
+		
+		# Set the player's name to match host's peer ID (1)
+		player.name = str(1)
+		
+		# Show the player and capture mouse
 		player.show()
 		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 		
 		# Add host to players dictionary
 		players[1] = player
 		
-		# Make sure the host player is properly set up for replication
-		player.set_multiplayer_authority(1)
-		if not player.is_multiplayer_authority():
-			print("Warning: Host player does not have authority!")
+		print("Map: Host player setup complete")
+		print("Map: Host player name: ", player.name)
+		print("Map: Host player authority: ", player.get_multiplayer_authority())
+		print("Map: Host player path: ", player.get_path())
 
 func start_multiplayer_client():
 	print("Map: Starting multiplayer client")
@@ -147,11 +155,8 @@ func start_multiplayer_client():
 	visible = true
 	print("Map: World visibility set to: ", visible)
 	
-	# Generate platforms and ladders
-	generate_platforms()
-	await get_tree().create_timer(0.1).timeout
-	generate_ladders()
-	print("Map: Platforms and ladders generated")
+	# Don't generate world on client - it will be synchronized from server
+	print("Map: Waiting for world synchronization from server")
 
 func spawn_player(data):
 	print("Map: spawn_player called with data: ", data)
@@ -175,25 +180,12 @@ func spawn_player(data):
 		return null
 	
 	# Set up player
-	new_player.name = str(peer_id)
+	new_player.name = str(peer_id)  # Set name to trigger _enter_tree()
 	new_player.position = Vector3(0, 1.27678, 0)  # Initial spawn position
 	
-	# Add to scene tree BEFORE setting authority
+	# Add to scene tree
 	print("Map: Adding player to scene tree with name: ", new_player.name)
 	add_child(new_player, true)
-	
-	# Set authority AFTER adding to tree
-	new_player.set_multiplayer_authority(peer_id)
-	
-	# Set up camera based on whether this is our local player
-	if new_player.has_node("Head/Camera3D"):
-		var camera = new_player.get_node("Head/Camera3D")
-		if peer_id == multiplayer.get_unique_id():
-			camera.current = true
-			print("Map: Camera set as current for local player")
-		else:
-			camera.current = false
-			print("Map: Camera disabled for remote player")
 	
 	# Store in players dictionary
 	players[peer_id] = new_player
@@ -211,17 +203,103 @@ func spawn_player(data):
 	
 	return new_player
 
-@rpc("any_peer", "reliable")
+@rpc("any_peer")
 func request_player_spawn(data):
-	print("Map: Received spawn request from peer: ", multiplayer.get_remote_sender_id())
+	var peer_id = multiplayer.get_remote_sender_id()
+	print("Map: Received spawn request from peer: ", peer_id)
+	multiplayer_spawner.spawn(data)
+
+func _on_spawned(node):
+	print("Map: Node spawned: ", node.name)
+	print("Map: Node path: ", node.get_path())
+	print("Map: Node authority: ", node.get_multiplayer_authority())
+	print("Map: Is multiplayer authority: ", node.is_multiplayer_authority())
+	
+	# If this is a player node
+	if node.is_in_group("players"):
+		print("Map: Spawned node is a player")
+		var player_id = int(node.name)
+		players[player_id] = node
+		
+		# If this is our local player
+		if player_id == multiplayer.get_unique_id():
+			print("Map: This is our local player")
+			player = node
+			
+			# Make sure the world is visible
+			visible = true
+			print("Map: World visibility set to: ", visible)
+
+func _on_peer_connected(id: int):
+	print("Map: Peer connected: ", id)
 	if multiplayer.is_server():
-		print("Map: Server handling spawn request")
-		print("Map: Spawn data: ", data)
-		# Let MultiplayerSpawner handle the spawning
-		var spawn_result = multiplayer_spawner.spawn(data)
-		print("Map: Spawn result: ", spawn_result)
-	else:
-		print("Map: Non-server received spawn request, ignoring")
+		print("Map: Server received new peer connection: ", id)
+
+func _on_peer_disconnected(id: int):
+	print("Map: Peer disconnected: ", id)
+	if players.has(id):
+		print("Map: Cleaning up disconnected player: ", id)
+		var disconnected_player = players[id]
+		if is_instance_valid(disconnected_player):
+			disconnected_player.queue_free()
+		players.erase(id)
+		print("Map: Successfully cleaned up player: ", id)
+
+func _process(delta: float) -> void:
+	checkWin()
+
+func _on_lava_body_entered(body: Node3D) -> void:
+	if body == player:
+		if multiplayer.is_server():
+			player_died.rpc()
+		else:
+			get_tree().change_scene_to_file("res://death_screen.tscn")
+
+@rpc("any_peer", "call_local")
+func player_died():
+	get_tree().change_scene_to_file("res://death_screen.tscn")
+
+func checkWin():
+	if not multiplayer.is_server():
+		return
+		
+	# Get all platforms and find the highest one
+	var platforms = get_tree().get_nodes_in_group("platform") + get_tree().get_nodes_in_group("ice")
+	
+	if platforms.size() == 0:
+		return
+	
+	# Find the highest platform
+	var highest_platform = null
+	for platform in platforms:
+		if platform and is_instance_valid(platform):
+			if highest_platform == null or platform.global_position.y > highest_platform.global_position.y:
+				highest_platform = platform
+	
+	if highest_platform == null:
+		return
+	
+	# Check if any player is on the highest platform
+	for player_node in get_tree().get_nodes_in_group("players"):
+		var player_pos = player_node.global_position
+		var platform_pos = highest_platform.global_position
+		
+		var x_distance = abs(player_pos.x - platform_pos.x)
+		var z_distance = abs(player_pos.z - platform_pos.z)
+		var y_distance = abs(player_pos.y - platform_pos.y)
+		
+		if (x_distance <= platform_half_width and 
+			z_distance <= platform_half_depth and 
+			y_distance <= 3.0):
+			if has_node("Stats"):
+				var stats = get_node("Stats")
+				stats.record_clear()
+				stats.save_stats()
+			game_won.rpc()
+
+@rpc("any_peer", "call_local")
+func game_won():
+	get_tree().change_scene_to_file("res://win_screen.tscn")
 
 @rpc("reliable")
 func player_ready(data):
@@ -239,27 +317,33 @@ func player_ready(data):
 		print("Map: Player authority: ", player_node.get_multiplayer_authority())
 		print("Map: Player path: ", player_node.get_path())
 		player = player_node
-		player.set_multiplayer_authority(player_id)
-		print("Map: Set player authority to: ", player_id)
 		
-		# Set up camera and input for local player
-		if player_id == multiplayer.get_unique_id():
-			if player_node.has_node("Head/Camera3D"):
-				var camera = player_node.get_node("Head/Camera3D")
-				camera.current = true
-				print("Map: Camera set as current for local player")
-			
-			# Enable input and physics processing
-			player_node.set_process_input(true)
-			player_node.set_physics_process(true)
-			print("Map: Input and physics processing enabled")
-			
-			# Make sure the world is visible
-			visible = true
-			print("Map: World visibility set to: ", visible)
+		# Make sure the world is visible
+		visible = true
+		print("Map: World visibility set to: ", visible)
 	else:
 		print("Map: Failed to find player node with ID: ", player_id)
 		print("Map: Available nodes: ", get_children())
+
+@rpc("any_peer", "reliable")
+func request_test_number():
+	print("Map: Server received test number request from peer: ", multiplayer.get_remote_sender_id())
+	if multiplayer.is_server():
+		var test_number = randi() % 1000  # Random number between 0 and 999
+		print("Map: Server sending test number: ", test_number)
+		rpc_id(multiplayer.get_remote_sender_id(), "receive_test_number", test_number)
+
+@rpc("authority", "reliable")
+func receive_test_number(number: int):
+	print("Map: Client received test number: ", number)
+	print("Map: My unique ID: ", multiplayer.get_unique_id())
+	# Echo back to server to confirm receipt
+	rpc_id(1, "confirm_test_number", number)
+
+@rpc("any_peer", "reliable")
+func confirm_test_number(number: int):
+	if multiplayer.is_server():
+		print("Map: Server received confirmation of test number ", number, " from peer: ", multiplayer.get_remote_sender_id())
 
 func generate_ladders():
 	var platforms = get_tree().get_nodes_in_group("platform") + get_tree().get_nodes_in_group("ice")
@@ -460,152 +544,3 @@ func generate_platforms():
 			"half_depth": platform_half_depth
 		})
 		last_position = new_position
-
-func _process(delta: float) -> void:
-	if visible:  # Only check win condition if world is visible
-		checkWin()
-	#lava.rise()
-
-func checkWin():
-	if not multiplayer.is_server():
-		return
-		
-	# Get all platforms and find the highest one
-	var platforms = get_tree().get_nodes_in_group("platform") + get_tree().get_nodes_in_group("ice")
-	
-	if platforms.size() == 0:
-		return
-	
-	# Find the highest platform
-	var highest_platform = null
-	for platform in platforms:
-		if platform and is_instance_valid(platform):
-			if highest_platform == null or platform.global_position.y > highest_platform.global_position.y:
-				highest_platform = platform
-	
-	if highest_platform == null:
-		return
-	
-	# Check if player is within the area of the highest platform
-	var player_pos = player.global_position
-	var platform_pos = highest_platform.global_position
-	
-	var x_distance = abs(player_pos.x - platform_pos.x)
-	var z_distance = abs(player_pos.z - platform_pos.z)
-	var y_distance = abs(player_pos.y - platform_pos.y)
-	
-	if (x_distance <= platform_half_width and 
-		z_distance <= platform_half_depth and 
-		y_distance <= 3.0):
-		if has_node("Stats"):
-			var stats = get_node("Stats")
-			stats.record_clear()
-			stats.save_stats()
-		get_tree().change_scene_to_file("res://win_screen.tscn")
-
-@rpc("any_peer", "reliable")
-func _on_player_death():
-	if multiplayer.is_server():
-		get_tree().change_scene_to_file("res://death_screen.tscn")
-
-@rpc("any_peer", "reliable")
-func player_setup_complete(data):
-	print("Map: Received player_setup_complete from peer: ", multiplayer.get_remote_sender_id())
-	if multiplayer.is_server():
-		print("Map: Server acknowledging player setup complete for ID: ", data.id)
-		# Server can now consider this player fully set up
-		if players.has(data.id):
-			print("Map: Player ", data.id, " is now fully set up")
-
-func _on_lava_body_entered(body: Node3D) -> void:
-	if body == player:
-		if multiplayer.is_server():
-			# Handle death on server
-			get_tree().change_scene_to_file("res://death_screen.tscn")
-		else:
-			# Notify server of death
-			rpc_id(1, "_on_player_death")
-
-@rpc("any_peer", "reliable")
-func request_test_number():
-	print("Map: Server received test number request from peer: ", multiplayer.get_remote_sender_id())
-	if multiplayer.is_server():
-		var test_number = randi() % 1000  # Random number between 0 and 999
-		print("Map: Server sending test number: ", test_number)
-		rpc_id(multiplayer.get_remote_sender_id(), "receive_test_number", test_number)
-
-@rpc("authority", "reliable")
-func receive_test_number(number: int):
-	print("Map: Client received test number: ", number)
-	print("Map: My unique ID: ", multiplayer.get_unique_id())
-	# Echo back to server to confirm receipt
-	rpc_id(1, "confirm_test_number", number)
-
-@rpc("any_peer", "reliable")
-func confirm_test_number(number: int):
-	if multiplayer.is_server():
-		print("Map: Server received confirmation of test number ", number, " from peer: ", multiplayer.get_remote_sender_id())
-
-func _on_peer_connected(id: int):
-	print("Map: Peer connected signal received for ID: ", id)
-	print("Map: Is server: ", multiplayer.is_server())
-	print("Map: My unique ID: ", multiplayer.get_unique_id())
-	
-	# Only handle peer connection on server
-	if multiplayer.is_server():
-		print("Map: Server received new peer connection: ", id)
-
-func _on_peer_disconnected(id: int):
-	print("Map: Peer disconnected signal received for ID: ", id)
-	
-	# Clean up the player
-	if players.has(id):
-		print("Map: Cleaning up disconnected player: ", id)
-		var disconnected_player = players[id]
-		if is_instance_valid(disconnected_player):
-			# Remove from scene tree
-			if disconnected_player.is_inside_tree():
-				disconnected_player.queue_free()
-			# Remove from players dictionary
-			players.erase(id)
-			print("Map: Successfully cleaned up player: ", id)
-		else:
-			print("Map: Player instance was already invalid")
-			players.erase(id)
-
-func _on_spawned(node):
-	print("Map: Node spawned: ", node.name)
-	print("Map: Node path: ", node.get_path())
-	print("Map: Node authority: ", node.get_multiplayer_authority())
-	print("Map: Is multiplayer authority: ", node.is_multiplayer_authority())
-	
-	# If this is a player node
-	if node.is_in_group("players"):
-		print("Map: Spawned node is a player")
-		var player_id = int(node.name)
-		players[player_id] = node
-		
-		# If this is our local player
-		if player_id == multiplayer.get_unique_id():
-			print("Map: This is our local player")
-			player = node
-			
-			# Set up camera and input
-			if node.has_node("Head/Camera3D"):
-				var camera = node.get_node("Head/Camera3D")
-				# Only set as current if this is our local player
-				if player_id == multiplayer.get_unique_id():
-					camera.current = true
-					print("Map: Camera set as current for local player")
-				else:
-					camera.current = false
-					print("Map: Camera disabled for remote player")
-			
-			# Enable input and physics processing
-			node.set_process_input(true)
-			node.set_physics_process(true)
-			print("Map: Input and physics processing enabled")
-			
-			# Make sure the world is visible
-			visible = true
-			print("Map: World visibility set to: ", visible)

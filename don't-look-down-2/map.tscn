@@ -27,8 +27,7 @@ uv1_triplanar = true
 [node name="Map" type="Node3D"]
 script = ExtResource("1_p5pve")
 
-[node name="Player" parent="." instance=ExtResource("1_wijl4")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.27678, 0)
+[node name="Players" type="Node3D" parent="."]
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_iw27f")
@@ -55,5 +54,6 @@ transform = Transform3D(2.5259, 0, 0, 0, 2.5259, 0, 0, 0, 2.5259, 0, -18.7825, 0
 [node name="Stats" parent="." instance=ExtResource("7_xxxxx")]
 
 [node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="."]
-_spawnable_scenes = PackedStringArray("uid://ctsll3aira0xk")
-spawn_path = NodePath("..")
+spawn_path = NodePath("Players")
+spawn_limit = 0
+auto_spawn_list = Array[PackedScene]([ExtResource("1_wijl4")])

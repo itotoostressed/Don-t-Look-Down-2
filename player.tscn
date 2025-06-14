@@ -22,24 +22,25 @@ properties/3/replication_mode = 1
 properties/4/path = NodePath("Head:rotation")
 properties/4/spawn = true
 properties/4/replication_mode = 1
-properties/5/path = NodePath(".:is_on_ladder")
+properties/5/path = NodePath("Head/Camera3D:current")
 properties/5/spawn = true
 properties/5/replication_mode = 1
-properties/6/path = NodePath(".:numJumps")
+properties/6/path = NodePath(".:is_on_ladder")
 properties/6/spawn = true
 properties/6/replication_mode = 1
-properties/7/path = NodePath(".:process_input")
+properties/7/path = NodePath(".:numJumps")
 properties/7/spawn = true
 properties/7/replication_mode = 1
-properties/8/path = NodePath(".:physics_process")
+properties/8/path = NodePath(".:process_input")
 properties/8/spawn = true
 properties/8/replication_mode = 1
-properties/9/path = NodePath(".:multiplayer_authority")
+properties/9/path = NodePath(".:physics_process")
 properties/9/spawn = true
 properties/9/replication_mode = 1
 
 [node name="Player" type="CharacterBody3D" groups=["players"]]
 script = ExtResource("1_4flbx")
+position = Vector3(0, 2, 0)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 mesh = SubResource("CapsuleMesh_onrkg")

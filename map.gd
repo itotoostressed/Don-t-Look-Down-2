@@ -1,9 +1,10 @@
 extends Node3D
 
-@onready var player_scene = preload("res://Player.tscn")  # Make sure this path matches your player scene
+@onready var player_scene = preload("res://Player.tscn")
 @onready var lava = $lava
 @onready var stats = $Stats
 @onready var multiplayer_spawner = $MultiplayerSpawner
+@onready var players_node = $Players
 
 var platformScene = load("res://platform.tscn")
 var ladderScene = load("res://ladder.tscn")
@@ -29,6 +30,7 @@ var changeDirZ = false
 
 var players = {}
 var world_generated = false
+var player = null
 
 func _ready():
 	print("Map: _ready called")
@@ -61,12 +63,14 @@ func _ready():
 		var server_player = spawn_player({"id": 1})
 		if server_player:
 			print("Map: Server player spawned successfully")
+			# Make world visible for server
+			visible = true
 	else:
 		print("Map: Setting up client")
 		# Request world generation from server
 		rpc_id(1, "request_world_generation")
 		# Request player spawn from server
-		rpc_id(1, "request_player_spawn")
+		rpc_id(1, "request_player_spawn", {"id": multiplayer.get_unique_id()})
 
 @rpc("any_peer")
 func request_world_generation():
@@ -85,10 +89,10 @@ func world_generation_complete():
 	visible = true
 
 @rpc("any_peer")
-func request_player_spawn():
+func request_player_spawn(data):
 	var peer_id = multiplayer.get_remote_sender_id()
 	print("Map: Received spawn request from peer: ", peer_id)
-	multiplayer_spawner.spawn({"id": peer_id})
+	multiplayer_spawner.spawn(data)
 
 func spawn_player(data):
 	print("Map: spawn_player called with data: ", data)
@@ -106,26 +110,33 @@ func spawn_player(data):
 	
 	# Create new player instance
 	print("Map: Creating new player instance for peer ID: ", peer_id)
-	var new_player = load("res://player.tscn").instantiate()
+	var new_player = player_scene.instantiate()
 	if not new_player:
 		print("Map: Error - Failed to instantiate player scene")
 		return null
 	
 	# Set up player
 	new_player.name = str(peer_id)
-	new_player.position = Vector3(0, 1.27678, 0)  # Initial spawn position
+	new_player.position = Vector3(0, 2.0, 0)  # Start higher above ground
+	new_player.add_to_group("players")
 	
-	# Add to scene tree
+	# Add to scene tree BEFORE setting authority
 	print("Map: Adding player to scene tree with name: ", new_player.name)
-	add_child(new_player, true)
+	players_node.add_child(new_player, true)
 	
 	# Store in players dictionary
 	players[peer_id] = new_player
 	
 	print("Map: Successfully spawned player with peer ID: ", peer_id)
+	print("Map: Player authority: ", new_player.get_multiplayer_authority())
 	print("Map: Player is in tree: ", is_instance_valid(new_player) and new_player.is_inside_tree())
 	print("Map: Player name: ", new_player.name)
 	print("Map: Player path: ", new_player.get_path())
+	
+	# Notify client immediately after spawning
+	if multiplayer.is_server():
+		print("Map: Notifying client of successful spawn")
+		rpc_id(peer_id, "player_ready", {"id": peer_id})
 	
 	return new_player
 
@@ -221,4 +232,40 @@ func checkWin():
 
 @rpc("any_peer", "call_local")
 func game_won():
-	get_tree().change_scene_to_file("res://win_screen.tscn") 
+	get_tree().change_scene_to_file("res://win_screen.tscn")
+
+@rpc("reliable")
+func player_ready(data):
+	print("Map: player_ready RPC received with data: ", data)
+	var player_id = data.id
+	print("Map: Looking for player with ID: ", player_id)
+	
+	# Wait a frame to ensure the node is in the tree
+	await get_tree().process_frame
+	
+	# Try to find the player node
+	var player_node = get_node_or_null(str(player_id))
+	if player_node:
+		print("Map: Found player node: ", player_node.name)
+		print("Map: Player authority: ", player_node.get_multiplayer_authority())
+		print("Map: Player path: ", player_node.get_path())
+		player = player_node
+		
+		# Set up camera and input for local player
+		if player_id == multiplayer.get_unique_id():
+			if player_node.has_node("Head/Camera3D"):
+				var camera = player_node.get_node("Head/Camera3D")
+				camera.current = true
+				print("Map: Camera set as current for local player")
+			
+			# Enable input and physics processing
+			player_node.set_process_input(true)
+			player_node.set_physics_process(true)
+			print("Map: Input and physics processing enabled")
+			
+			# Make sure the world is visible
+			visible = true
+			print("Map: World visibility set to: ", visible)
+	else:
+		print("Map: Failed to find player node with ID: ", player_id)
+		print("Map: Available nodes: ", get_children()) 

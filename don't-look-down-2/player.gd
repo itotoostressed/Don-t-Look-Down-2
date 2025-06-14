@@ -44,20 +44,34 @@ func _ready():
 		print("Player: Stats node found")
 	else:
 		print("Player: WARNING: Stats node not found")
+	
+	# Make sure we're visible
+	show()
 
 func _unhandled_input(event):
+	print("Player: Input event received: ", event)
+	print("Player: Authority: ", is_multiplayer_authority())
+	print("Player: Name: ", name)
+	
 	if not is_multiplayer_authority():
+		print("Player: Not authoritative, ignoring input")
 		return
 		
 	if event is InputEventMouseMotion:
+		print("Player: Processing mouse motion")
 		head.rotate_y(-event.relative.x * SENSITIVITY)
 		camera.rotate_x(-event.relative.y * SENSITIVITY)
 		camera.rotation.x = clamp(camera.rotation.x, deg_to_rad(-90), deg_to_rad(90))
+	elif event is InputEventKey:
+		print("Player: Processing key event: ", event.keycode)
 
 func _physics_process(delta: float) -> void:
 	if not is_multiplayer_authority():
 		return
 		
+	print("Player: Physics processing - Authority: ", is_multiplayer_authority())
+	print("Player: Current velocity: ", velocity)
+	
 	# Reset ladder state each frame
 	var was_on_ladder = is_on_ladder
 	is_on_ladder = false
@@ -143,13 +157,16 @@ func _physics_process(delta: float) -> void:
 		direction = direction.normalized()
 		
 		if direction:
+			print("Player: Moving in direction: ", direction)
 			velocity.x = direction.x * SPEED
 			velocity.z = direction.z * SPEED
 		else:
 			velocity.x = move_toward(velocity.x, 0, FRICTION)
 			velocity.z = move_toward(velocity.z, 0, FRICTION)
 	
+	print("Player: Final velocity before move_and_slide: ", velocity)
 	move_and_slide()
+	print("Player: Position after move_and_slide: ", global_position)
 
 func check_win_condition():
 	# Get reference to map node (adjust path if needed)
@@ -164,3 +181,17 @@ func _on_lava_body_entered(body: Node3D) -> void:
 	if body and body.is_in_group("players"):
 		print("player died!")
 		call_deferred("_change_to_death_scene")
+
+func _enter_tree():
+	print("Player: _enter_tree called")
+	print("Player: Name: ", name)
+	print("Player: My unique ID: ", multiplayer.get_unique_id())
+	
+	# Set authority based on whether this is our local player
+	var peer_id = name.to_int()
+	var is_local = peer_id == multiplayer.get_unique_id()
+	set_multiplayer_authority(peer_id if is_local else 0)
+	
+	print("Player: Authority set to: ", get_multiplayer_authority())
+	print("Player: Is local: ", is_local)
+	print("Player: Is in tree: ", is_inside_tree())

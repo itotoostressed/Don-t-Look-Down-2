@@ -21,6 +21,11 @@ func start_host():
 		
 	multiplayer.multiplayer_peer = peer
 	
+	# Remove menu scene
+	var menu = get_node("/root/Node3D/CanvasLayer/Menu")
+	if menu:
+		menu.queue_free()
+	
 	# Create and setup world
 	current_world = world_scene.instantiate()
 	get_tree().root.add_child(current_world)
@@ -39,6 +44,11 @@ func start_client():
 		return
 		
 	multiplayer.multiplayer_peer = peer
+	
+	# Remove menu scene
+	var menu_scene = get_node("/root/Node3D/CanvasLayer/Menu")
+	if menu_scene:
+		menu_scene.queue_free()
 	
 	# Wait for connection before creating world
 	print("NetworkHandler: Waiting for connection...")
@@ -70,6 +80,11 @@ func start_single_player():
 	print("NetworkHandler: Starting single player")
 	# Clean up any existing world
 	cleanup()
+	
+	# Remove menu scene
+	var menu = get_node("/root/Node3D/CanvasLayer/Menu")
+	if menu:
+		menu.queue_free()
 	
 	current_world = world_scene.instantiate()
 	get_tree().root.add_child(current_world)

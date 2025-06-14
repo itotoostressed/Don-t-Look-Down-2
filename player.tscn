@@ -31,16 +31,15 @@ properties/6/replication_mode = 1
 properties/7/path = NodePath(".:numJumps")
 properties/7/spawn = true
 properties/7/replication_mode = 1
-properties/8/path = NodePath(".:process_input")
+properties/8/path = NodePath(".:visible")
 properties/8/spawn = true
 properties/8/replication_mode = 1
-properties/9/path = NodePath(".:physics_process")
+properties/9/path = NodePath("MeshInstance3D:visible")
 properties/9/spawn = true
 properties/9/replication_mode = 1
 
 [node name="Player" type="CharacterBody3D" groups=["players"]]
 script = ExtResource("1_4flbx")
-position = Vector3(0, 2, 0)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 mesh = SubResource("CapsuleMesh_onrkg")
@@ -50,11 +49,13 @@ skeleton = NodePath("")
 shape = SubResource("CapsuleShape3D_i3pqv")
 
 [node name="Head" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
 
 [node name="Camera3D" type="Camera3D" parent="Head"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.600013, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+current = false
 
 [node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
 replication_interval = 0.016
 replication_config = SubResource("SceneReplicationConfig_4flbx")
-visibility_update_mode = 1 
+visibility_update_mode = 1

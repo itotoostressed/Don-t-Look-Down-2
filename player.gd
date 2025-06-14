@@ -24,9 +24,8 @@ var is_on_ladder = false
 func _enter_tree():
 	# Set authority based on node name
 	var peer_id = name.to_int()
-	print("Player: _enter_tree called")
-	print("Player: Node name: ", name)
-	print("Player: Setting authority to ", peer_id)
+	print("Player: Entering tree with name: ", name, " (peer_id: ", peer_id, ")")
+	print("Player: My unique ID: ", multiplayer.get_unique_id())
 	set_multiplayer_authority(peer_id)
 	print("Player: Authority set to: ", get_multiplayer_authority())
 	
@@ -35,11 +34,13 @@ func _enter_tree():
 		synchronizer.set_multiplayer_authority(peer_id)
 
 func _ready():
-	print("Player: _ready called")
-	print("Player: Name: ", name)
+	print("Player: Ready called - Name: ", name)
 	print("Player: Authority: ", get_multiplayer_authority())
-	print("Player: Is in tree: ", is_inside_tree())
+	print("Player: Is multiplayer authority: ", is_multiplayer_authority())
 	print("Player: My unique ID: ", multiplayer.get_unique_id())
+	print("Player: Is in tree: ", is_inside_tree())
+	print("Player: Current position: ", global_position)
+	print("Player: Is visible: ", visible)
 	
 	# Only enable input and camera for the local player
 	if is_multiplayer_authority():
@@ -48,6 +49,10 @@ func _ready():
 		if camera:
 			camera.current = true
 			print("Player: Camera set as current")
+			print("Player: Camera transform: ", camera.global_transform)
+			print("Player: Camera is current: ", camera.current)
+		else:
+			print("Player: ERROR - Camera node not found!")
 		
 		# Enable input and physics processing
 		set_process_input(true)
@@ -59,22 +64,22 @@ func _ready():
 		
 		# Ensure we start at a valid position
 		position.y = 1.0  # Start slightly above ground
+		print("Player: Initial position set to: ", position)
 	else:
 		print("Player: Setting up remote player")
 		# Disable camera for remote players
 		if camera:
 			camera.current = false
 			print("Player: Camera disabled for remote player")
+			print("Player: Camera transform: ", camera.global_transform)
+			print("Player: Camera is current: ", camera.current)
+		else:
+			print("Player: ERROR - Camera node not found!")
 		
 		# Disable input and physics processing for remote players
 		set_process_input(false)
 		set_physics_process(false)
 		print("Player: Input and physics processing disabled for remote player")
-	
-	if has_node("/root/Stats"):
-		print("Player: Stats node found")
-	else:
-		print("Player: WARNING: Stats node not found")
 
 func _unhandled_input(event):
 	if not is_multiplayer_authority():
@@ -148,17 +153,12 @@ func _physics_process(delta: float) -> void:
 			
 			velocity.y = JUMP_VELOCITY
 			coyote_timer = 0       # Use up coyote time
-			print("Player jumped! Recording jump...")
+			
 			if has_node("/root/Stats"):
 				var stats = get_node("/root/Stats")
-				print("Current stats before jump - Jumps: ", stats.jumps, " Deaths: ", stats.deaths, " Clears: ", stats.clears)
 				stats.record_jump()
-				print("Jump recorded! New stats - Jumps: ", stats.jumps, " Deaths: ", stats.deaths, " Clears: ", stats.clears)
-				# Verify the save
 				stats.save_stats()
-				print("Stats saved after jump")
-			else:
-				print("ERROR: Stats node not found when trying to record jump!")
+			
 			emit_signal("jumped")  # Emit the jump signal
 	
 	# Horizontal movement
@@ -184,4 +184,18 @@ func _physics_process(delta: float) -> void:
 	
 	# Ensure we don't fall through the ground
 	if position.y < 0:
-		position.y = 1.0 
+		position.y = 1.0
+
+func check_win_condition():
+	# Get reference to map node (adjust path if needed)
+	var map = get_parent()  # Assuming player is child of map
+	if map.has_method("checkWin"):
+		map.checkWin()
+
+func _change_to_death_scene():
+	get_tree().change_scene_to_file("res://death_screen.tscn")
+
+func _on_lava_body_entered(body: Node3D) -> void:
+	if body and body.is_in_group("players"):
+		print("player died!")
+		call_deferred("_change_to_death_scene")

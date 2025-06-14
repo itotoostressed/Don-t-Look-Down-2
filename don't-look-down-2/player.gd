@@ -22,64 +22,75 @@ var is_on_ladder = false
 @onready var mesh = $MeshInstance3D
 
 func _enter_tree():
-	# Set authority based on node name
-	var peer_id = name.to_int()
-	print("Player: Entering tree with name: ", name, " (peer_id: ", peer_id, ")")
-	print("Player: My unique ID: ", multiplayer.get_unique_id())
-	set_multiplayer_authority(peer_id)
-	print("Player: Authority set to: ", get_multiplayer_authority())
+	print("Player: Entering tree with name: ", name)
 	
-	# Ensure we're properly set up for networking
-	if synchronizer:
-		synchronizer.set_multiplayer_authority(peer_id)
+	# Don't set authority here - wait for proper setup
+	if name.is_valid_int():
+		var peer_id = name.to_int()
+		print("Player: Setting authority to peer_id: ", peer_id)
+		set_multiplayer_authority(peer_id)
+		if synchronizer:
+			synchronizer.set_multiplayer_authority(peer_id)
+	else:
+		print("Player: Invalid name for peer_id: ", name)
 
 func _ready():
 	print("Player: Ready called - Name: ", name)
 	print("Player: Authority: ", get_multiplayer_authority())
+	print("Player: My unique ID: ", multiplayer.get_unique_id())
+	print("Player: Is multiplayer authority: ", is_multiplayer_authority())
+	
+	# Wait a frame to ensure multiplayer system is ready
+	await get_tree().process_frame
+	
+	setup_player_role()
+
+func setup_player_role():
+	print("Player: Setting up player role")
 	print("Player: Is multiplayer authority: ", is_multiplayer_authority())
 	print("Player: My unique ID: ", multiplayer.get_unique_id())
-	print("Player: Is in tree: ", is_inside_tree())
-	print("Player: Current position: ", global_position)
-	print("Player: Is visible: ", visible)
+	print("Player: Node authority: ", get_multiplayer_authority())
 	
 	# Only enable input and camera for the local player
 	if is_multiplayer_authority():
-		print("Player: Setting up local player")
-		# Set up camera
-		if camera:
-			camera.current = true
-			print("Player: Camera set as current")
-			print("Player: Camera transform: ", camera.global_transform)
-			print("Player: Camera is current: ", camera.current)
-		else:
-			print("Player: ERROR - Camera node not found!")
-		
-		# Enable input and physics processing
-		set_process_input(true)
-		set_physics_process(true)
-		print("Player: Input and physics processing enabled")
-		
-		# Set mouse mode
-		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
-		
-		# Ensure we start at a valid position
-		position.y = 1.0  # Start slightly above ground
-		print("Player: Initial position set to: ", position)
+		print("Player: Setting up LOCAL player")
+		setup_local_player()
 	else:
-		print("Player: Setting up remote player")
-		# Disable camera for remote players
-		if camera:
-			camera.current = false
-			print("Player: Camera disabled for remote player")
-			print("Player: Camera transform: ", camera.global_transform)
-			print("Player: Camera is current: ", camera.current)
-		else:
-			print("Player: ERROR - Camera node not found!")
-		
-		# Disable input and physics processing for remote players
-		set_process_input(false)
-		set_physics_process(false)
-		print("Player: Input and physics processing disabled for remote player")
+		print("Player: Setting up REMOTE player")
+		setup_remote_player()
+
+func setup_local_player():
+	# Set up camera
+	if camera:
+		camera.current = true
+		print("Player: Camera set as current")
+	else:
+		print("Player: ERROR - Camera node not found!")
+	
+	# Enable input and physics processing
+	set_process_input(true)
+	set_physics_process(true)
+	print("Player: Input and physics processing enabled")
+	
+	# Set mouse mode
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	
+	# Ensure we start at a valid position
+	position.y = 1.0
+	print("Player: Local player setup complete at position: ", position)
+
+func setup_remote_player():
+	# Disable camera for remote players
+	if camera:
+		camera.current = false
+		print("Player: Camera disabled for remote player")
+	else:
+		print("Player: ERROR - Camera node not found!")
+	
+	# Disable input and physics processing for remote players
+	set_process_input(false)
+	set_physics_process(false)
+	print("Player: Remote player setup complete")
 
 func _unhandled_input(event):
 	if not is_multiplayer_authority():

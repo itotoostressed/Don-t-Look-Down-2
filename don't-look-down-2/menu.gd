@@ -64,7 +64,6 @@ func _on_stats_button_pressed() -> void:
 func _on_host_button_pressed() -> void:
 	if is_connecting:
 		return
-		
 	is_connecting = true
 	
 	# Start as host
@@ -76,7 +75,6 @@ func _on_host_button_pressed() -> void:
 func _on_join_button_pressed() -> void:
 	if is_connecting:
 		return
-		
 	is_connecting = true
 	
 	# Join as client

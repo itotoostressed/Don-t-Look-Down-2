@@ -45,35 +45,31 @@ func start_client():
 		
 	multiplayer.multiplayer_peer = peer
 	
+	# Connect to the connected signal BEFORE setting the peer
+	if not multiplayer.connected_to_server.is_connected(_on_client_connected):
+		multiplayer.connected_to_server.connect(_on_client_connected)
+
 	# Remove menu scene
 	var menu_scene = get_node("/root/Node3D/CanvasLayer/Menu")
 	if menu_scene:
 		menu_scene.queue_free()
 	
-	# Wait for connection before creating world
 	print("NetworkHandler: Waiting for connection...")
+
+# New function to handle when client successfully connects
+func _on_client_connected():
+	print("NetworkHandler: Successfully connected to server!")
+	print("NetworkHandler: My peer ID is: ", multiplayer.get_unique_id())
 	
-	# Wait for connection with timeout
-	var timeout = 5.0  # 5 seconds timeout
-	var start_time = Time.get_ticks_msec()
-	while peer.get_connection_status() != MultiplayerPeer.CONNECTION_CONNECTED:
-		await get_tree().process_frame
-		if Time.get_ticks_msec() - start_time > timeout * 1000:
-			print("NetworkHandler: Connection timeout")
-			peer.close()
-			multiplayer.multiplayer_peer = null
-			# Show menu again
-			var menu = get_node("/root/Node3D/CanvasLayer/Menu")
-			if menu:
-				menu.show()
-				Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-			return
-	
-	print("NetworkHandler: Connected to server, creating world")
-	# Create and setup world
+	# Now create the world
 	current_world = world_scene.instantiate()
 	get_tree().root.add_child(current_world)
 	print("NetworkHandler: World added to scene tree")
+	
+	# Wait a frame for the world to be properly set up
+	await get_tree().process_frame
+	
+	# Start multiplayer client mode
 	current_world.start_multiplayer_client()
 
 func start_single_player():

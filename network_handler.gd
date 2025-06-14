@@ -54,6 +54,7 @@ func start_client(ip: String = "localhost", port: int = 135) -> void:
 
 func _on_connected_to_server() -> void:
 	print("NetworkHandler: Connected to server!")
+	print("My unique ID: ", multiplayer.get_unique_id())
 	
 	# Create and setup world for client
 	current_world = world_scene.instantiate()
@@ -63,7 +64,7 @@ func _on_connected_to_server() -> void:
 	# Wait a frame to ensure the map is ready
 	await get_tree().process_frame
 	
-	# Request player spawn
+	# Request player spawn with client's ID
 	var spawn_data = {
 		"id": multiplayer.get_unique_id(),
 		"position": Vector3(0, 5, 0),

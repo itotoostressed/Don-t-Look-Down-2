@@ -73,22 +73,16 @@ func _ready():
 			print("Map: Removing pre-instantiated player for client")
 			player.queue_free()
 			player = null
-	
-	# Test networking if we're a client
-	if not multiplayer.is_server():
-		print("Map: Client requesting test number from server")
-		rpc_id(1, "request_test_number")
+		
+		# Request world state from host
+		print("Map: Requesting world state from host")
+		request_world_state.rpc_id(1)
 	
 	# Ensure we have the necessary nodes
 	player = get_node_or_null("Player")
 	world = get_node_or_null("World")
 	platforms = get_node_or_null("World/Platforms")
 	ladders = get_node_or_null("World/Ladders")
-	
-	# If we're a client, wait for the host to send us the world state
-	if multiplayer.multiplayer_peer != null and not multiplayer.is_server():
-		# Request world state from host
-		request_world_state.rpc_id(1)
 
 func start_single_player():
 	print("Map: Starting single player mode")
@@ -246,6 +240,7 @@ func _spawn_player(data: Dictionary) -> Node:
 	# Set authority AFTER adding to tree
 	new_player.set_multiplayer_authority(id)
 	print("Map: Player authority set to: ", new_player.get_multiplayer_authority())
+	print("Map: Player has authority: ", new_player.is_multiplayer_authority())
 	
 	# Set up player based on whether it's local or remote
 	if id == multiplayer.get_unique_id():

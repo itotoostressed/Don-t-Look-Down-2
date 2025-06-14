@@ -37,6 +37,9 @@ func _enter_tree():
 	# Ensure we're properly set up for networking
 	if synchronizer:
 		synchronizer.set_multiplayer_authority(peer_id)
+		
+	# Force a ready call to ensure proper setup
+	call_deferred("_ready")
 
 func _ready():
 	print("[AUTHORITY] Player ready - Name: ", name)

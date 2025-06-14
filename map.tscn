@@ -51,4 +51,5 @@ transform = Transform3D(2.5259, 0, 0, 0, 2.5259, 0, 0, 0, 2.5259, 0, -18.7825, 0
 [node name="Stats" parent="." instance=ExtResource("7_xxxxx")]
 
 [node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="."]
-spawn_path = NodePath(".")
+_spawnable_scenes = PackedStringArray("uid://ctsll3aira0xk")
+spawn_path = NodePath("..")

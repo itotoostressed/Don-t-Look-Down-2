@@ -3,12 +3,12 @@ extends Node3D
 @onready var player = $Player
 @onready var lava = $lava
 @onready var stats = $Stats
-@onready var multiplayer_spawner = $MultiplayerSpawner
 @onready var world = $World
 @onready var platforms = $World/Platforms
 @onready var ladders = $World/Ladders
 var platformScene = load("res://platform.tscn")
 var ladderScene = load("res://ladder.tscn") # Make sure to load your ladder scene
+var player_scene = preload("res://player.tscn")
 
 # Configuration variables
 var platform_count = 30
@@ -37,21 +37,18 @@ var test_number = 0
 func _ready():
 	print("Map: _ready called")
 	
-	# Set up MultiplayerSpawner
-	multiplayer_spawner.spawn_function = spawn_player
-	print("Map: MultiplayerSpawner spawn function set")
-	
-	# Connect MultiplayerSpawner signals
-	multiplayer_spawner.spawned.connect(_on_spawned)
-	print("Map: MultiplayerSpawner signals connected")
+	# Initialize the players dictionary
+	players = {}
 	
 	# Make sure the world is visible from the start
 	visible = true
 	print("Map: World visibility set to: ", visible)
 	
-	# Connect multiplayer signals
-	multiplayer.peer_connected.connect(_on_peer_connected)
-	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
+	# Connect multiplayer signals (only once)
+	if not multiplayer.peer_connected.is_connected(_on_peer_connected):
+		multiplayer.peer_connected.connect(_on_peer_connected)
+	if not multiplayer.peer_disconnected.is_connected(_on_peer_disconnected):
+		multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 	print("Map: Multiplayer signals connected")
 	
 	# Only set up initial player authority if we're the server
@@ -81,6 +78,17 @@ func _ready():
 	if not multiplayer.is_server():
 		print("Map: Client requesting test number from server")
 		rpc_id(1, "request_test_number")
+	
+	# Ensure we have the necessary nodes
+	player = get_node_or_null("Player")
+	world = get_node_or_null("World")
+	platforms = get_node_or_null("World/Platforms")
+	ladders = get_node_or_null("World/Ladders")
+	
+	# If we're a client, wait for the host to send us the world state
+	if multiplayer.multiplayer_peer != null and not multiplayer.is_server():
+		# Request world state from host
+		request_world_state.rpc_id(1)
 
 func start_single_player():
 	print("Map: Starting single player mode")
@@ -199,7 +207,7 @@ func start_multiplayer_client():
 	# Request spawn from server
 	if multiplayer.is_server():
 		print("Map: We are server, spawning directly")
-		multiplayer_spawner.spawn(spawn_data)
+		$MultiplayerSpawner.spawn(spawn_data)
 	else:
 		print("Map: We are client, requesting spawn from server")
 		rpc_id(1, "request_player_spawn", spawn_data)
@@ -217,59 +225,54 @@ func start_multiplayer_client():
 	generate_ladders()
 	print("Map: Platforms and ladders generated")
 
-func spawn_player(data):
-	print("Map: spawn_player called with data: ", data)
-	var peer_id = data.id
+@rpc("any_peer", "call_local")
+func _spawn_player(data: Dictionary) -> Node:
+	print("Map: Spawning player with data: ", data)
+	var id = data.id
+	var new_player = player_scene.instantiate()
+	new_player.name = str(id)
+	new_player.position = data.position
+	new_player.rotation = data.rotation
 	
-	print("Map: Attempting to spawn player with peer ID: ", peer_id)
-	print("Map: Current players: ", players.keys())
-	print("Map: Is server: ", multiplayer.is_server())
-	print("Map: My unique ID: ", multiplayer.get_unique_id())
-	
-	# Ensure we don't create duplicate players
-	if players.has(peer_id):
-		print("Map: Player with peer ID ", peer_id, " already exists")
-		return players[peer_id]
-	
-	# Create new player instance
-	print("Map: Creating new player instance for peer ID: ", peer_id)
-	var new_player = load("res://player.tscn").instantiate()
-	if not new_player:
-		print("Map: Error - Failed to instantiate player scene")
-		return null
-	
-	# Set up player
-	new_player.name = str(peer_id)
-	new_player.position = Vector3(0, 5, 0)  # Raised spawn position
-	print("Map: Setting player position to: ", new_player.position)
+	# Set up multiplayer synchronization
+	var synchronizer = MultiplayerSynchronizer.new()
+	synchronizer.name = "MultiplayerSynchronizer"
+	synchronizer.replication_config = new_player.get_node("MultiplayerSynchronizer").replication_config
+	new_player.add_child(synchronizer)
 	
 	# Add to scene tree BEFORE setting authority
-	print("Map: Adding player to scene tree")
 	add_child(new_player, true)
 	
 	# Set authority AFTER adding to tree
-	new_player.set_multiplayer_authority(peer_id)
+	new_player.set_multiplayer_authority(id)
 	print("Map: Player authority set to: ", new_player.get_multiplayer_authority())
 	
-	# Set up camera based on whether this is our local player
-	if new_player.has_node("Head/Camera3D"):
-		var camera = new_player.get_node("Head/Camera3D")
-		if peer_id == multiplayer.get_unique_id():
-			camera.current = true
-			print("Map: Camera set as current for local player")
-			# Make sure the player is visible
-			new_player.show()
-			print("Map: Local player visibility set to: ", new_player.visible)
-			# Set the player variable for local player
-			player = new_player
-			print("Map: Local player variable set")
-		else:
-			camera.current = false
-			print("Map: Camera disabled for remote player")
+	# Set up player based on whether it's local or remote
+	if id == multiplayer.get_unique_id():
+		print("Map: Setting up local player controls")
+		new_player.set_process_input(true)
+		new_player.set_physics_process(true)
+		# Set camera for local player
+		if new_player.has_node("Head/Camera3D"):
+			new_player.get_node("Head/Camera3D").current = true
+	else:
+		print("Map: Setting up remote player (no input/camera)")
+		new_player.set_process_input(false)
+		new_player.set_physics_process(false)
+		# Disable camera for remote players
+		if new_player.has_node("Head/Camera3D"):
+			new_player.get_node("Head/Camera3D").current = false
+	
+	# Make sure the player is visible
+	new_player.show()
 	
 	# Store in players dictionary
-	players[peer_id] = new_player
-	print("Map: Player added to players dictionary")
+	players[id] = new_player
+	print("Map: Player added to players dictionary with ID: ", id)
+	
+	# If this is the host's player, store it
+	if id == 1 and multiplayer.is_server():
+		player = new_player
 	
 	return new_player
 
@@ -280,10 +283,8 @@ func request_player_spawn(data):
 		print("Map: Server handling spawn request")
 		print("Map: Spawn data: ", data)
 		# Let MultiplayerSpawner handle the spawning
-		var spawn_result = multiplayer_spawner.spawn(data)
-		print("Map: Spawn result: ", spawn_result)
-	else:
-		print("Map: Non-server received spawn request, ignoring")
+		$MultiplayerSpawner.spawn(data)
+		print("Map: Spawn request handled")
 
 @rpc("reliable")
 func player_ready(data):
@@ -354,8 +355,6 @@ func _on_spawned(node):
 	print("Map: Player spawned: ", node.name)
 	print("Map: Spawned player authority: ", node.get_multiplayer_authority())
 	print("Map: Spawned player visibility: ", node.visible)
-	if node.has_node("Head/Camera3D"):
-		print("Map: Spawned player camera current: ", node.get_node("Head/Camera3D").current)
 	
 	# If this is a player node
 	if node.is_in_group("players"):
@@ -371,22 +370,22 @@ func _on_spawned(node):
 			# Set up camera and input
 			if node.has_node("Head/Camera3D"):
 				var camera = node.get_node("Head/Camera3D")
-				# Only set as current if this is our local player
-				if player_id == multiplayer.get_unique_id():
-					camera.current = true
-					print("Map: Camera set as current for local player")
-				else:
-					camera.current = false
-					print("Map: Camera disabled for remote player")
+				camera.current = true
+				print("Map: Camera set as current for local player")
 			
-			# Enable input and physics processing
+			# Enable input and physics
 			node.set_process_input(true)
 			node.set_physics_process(true)
-			print("Map: Input and physics processing enabled")
-			
-			# Make sure the world is visible
-			visible = true
-			print("Map: World visibility set to: ", visible)
+		else:
+			# For remote players
+			if node.has_node("Head/Camera3D"):
+				node.get_node("Head/Camera3D").current = false
+			node.set_process_input(false)
+			node.set_physics_process(false)
+		
+		# Make sure the player is visible
+		node.show()
+		print("Map: Player visibility set to: ", node.visible)
 
 @rpc("any_peer", "reliable")
 func request_test_number():
@@ -657,3 +656,75 @@ func _on_lava_body_entered(body: Node3D) -> void:
 		else:
 			# Notify server of death
 			rpc_id(1, "_on_player_death")
+
+@rpc("any_peer", "reliable")
+func request_world_state():
+	if multiplayer.is_server():
+		# Send world state to the requesting client
+		send_world_state.rpc_id(multiplayer.get_remote_sender_id())
+		
+		# Send platform and ladder positions
+		var platform_positions = []
+		var ladder_positions = []
+		
+		# Get all platform positions
+		for platform in get_tree().get_nodes_in_group("platform") + get_tree().get_nodes_in_group("ice"):
+			platform_positions.append({
+				"position": platform.global_position,
+				"is_ice": platform.is_in_group("ice")
+			})
+		
+		# Get all ladder positions
+		for ladder in get_tree().get_nodes_in_group("ladders"):
+			ladder_positions.append({
+				"position": ladder.global_position,
+				"rotation": ladder.global_rotation
+			})
+		
+		# Send the positions to the client
+		send_world_objects.rpc_id(multiplayer.get_remote_sender_id(), platform_positions, ladder_positions)
+
+@rpc("reliable")
+func send_world_state():
+	if not multiplayer.is_server():
+		# Wait a frame to ensure all nodes are ready
+		await get_tree().process_frame
+		
+		# Re-get the nodes after receiving world state
+		player = get_node_or_null("Player")
+		world = get_node_or_null("World")
+		platforms = get_node_or_null("World/Platforms")
+		ladders = get_node_or_null("World/Ladders")
+		
+		# Generate the same world as the host
+		generate_platforms()
+		await get_tree().create_timer(0.1).timeout
+		generate_ladders()
+
+@rpc("reliable")
+func send_world_objects(platform_positions: Array, ladder_positions: Array):
+	if not multiplayer.is_server():
+		# Clear existing platforms and ladders
+		for platform in get_tree().get_nodes_in_group("platform") + get_tree().get_nodes_in_group("ice"):
+			platform.queue_free()
+		for ladder in get_tree().get_nodes_in_group("ladders"):
+			ladder.queue_free()
+		
+		# Create platforms
+		for platform_data in platform_positions:
+			var platform = platformScene.instantiate()
+			platform.global_position = platform_data.position
+			if platform_data.is_ice:
+				platform.get_node("texture").material_override = load("res://ice_texture.tres")
+				platform.add_to_group("ice")
+			else:
+				platform.get_node("texture").material_override = load("res://wood.tres")
+				platform.add_to_group("platform")
+			add_child(platform)
+		
+		# Create ladders
+		for ladder_data in ladder_positions:
+			var ladder = ladderScene.instantiate()
+			ladder.global_position = ladder_data.position
+			ladder.global_rotation = ladder_data.rotation
+			add_child(ladder)

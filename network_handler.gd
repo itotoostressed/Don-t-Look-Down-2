@@ -32,49 +32,51 @@ func start_host():
 	print("NetworkHandler: World added to scene tree")
 	current_world.start_multiplayer_host()
 
-func start_client():
-	print("NetworkHandler: Starting client")
-	# Clean up any existing world
-	cleanup()
+func start_client(ip: String = "localhost", port: int = 135) -> void:
+	print("NetworkHandler: Starting client connection to ", ip, ":", port)
 	
+	# Create ENet peer
 	var peer = ENetMultiplayerPeer.new()
-	var error = peer.create_client("localhost", 135)
+	var error = peer.create_client(ip, port)
 	if error != OK:
 		print("NetworkHandler: Failed to create client: ", error)
 		return
-		
+	
+	# Set up multiplayer
 	multiplayer.multiplayer_peer = peer
 	
-	# Remove menu scene
-	var menu_scene = get_node("/root/Node3D/CanvasLayer/Menu")
-	if menu_scene:
-		menu_scene.queue_free()
+	# Connect signals
+	multiplayer.connected_to_server.connect(_on_connected_to_server)
+	multiplayer.connection_failed.connect(_on_connection_failed)
+	multiplayer.server_disconnected.connect(_on_server_disconnected)
 	
-	# Wait for connection before creating world
-	print("NetworkHandler: Waiting for connection...")
+	print("NetworkHandler: Client setup complete, attempting connection...")
+
+func _on_connected_to_server() -> void:
+	print("NetworkHandler: Connected to server!")
 	
-	# Wait for connection with timeout
-	var timeout = 5.0  # 5 seconds timeout
-	var start_time = Time.get_ticks_msec()
-	while peer.get_connection_status() != MultiplayerPeer.CONNECTION_CONNECTED:
-		await get_tree().process_frame
-		if Time.get_ticks_msec() - start_time > timeout * 1000:
-			print("NetworkHandler: Connection timeout")
-			peer.close()
-			multiplayer.multiplayer_peer = null
-			# Show menu again
-			var menu = get_node("/root/Node3D/CanvasLayer/Menu")
-			if menu:
-				menu.show()
-				Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-			return
-	
-	print("NetworkHandler: Connected to server, creating world")
-	# Create and setup world
+	# Create and setup world for client
 	current_world = world_scene.instantiate()
 	get_tree().root.add_child(current_world)
 	print("NetworkHandler: World added to scene tree")
-	current_world.start_multiplayer_client()
+	
+	# Wait a frame to ensure the map is ready
+	await get_tree().process_frame
+	
+	# Request player spawn
+	var spawn_data = {
+		"id": multiplayer.get_unique_id(),
+		"position": Vector3(0, 5, 0),
+		"rotation": Vector3.ZERO
+	}
+	
+	# Request player spawn
+	if has_node("/root/Map"):
+		var map = get_node("/root/Map")
+		map.request_player_spawn.rpc_id(1, spawn_data)
+		print("NetworkHandler: Player spawn requested")
+	else:
+		print("NetworkHandler: Map node not found!")
 
 func start_single_player():
 	print("NetworkHandler: Starting single player")
@@ -100,3 +102,23 @@ func cleanup():
 		current_world = null
 		# Wait for cleanup to complete
 		await get_tree().process_frame 
+
+func _on_connection_failed() -> void:
+	print("NetworkHandler: Failed to connect to server")
+	# Clean up the failed connection
+	multiplayer.multiplayer_peer = null
+	# Show menu again
+	var menu = get_node("/root/Node3D/CanvasLayer/Menu")
+	if menu:
+		menu.show()
+		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+
+func _on_server_disconnected() -> void:
+	print("NetworkHandler: Disconnected from server")
+	# Clean up the connection
+	multiplayer.multiplayer_peer = null
+	# Show menu again
+	var menu = get_node("/root/Node3D/CanvasLayer/Menu")
+	if menu:
+		menu.show()
+		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE) 

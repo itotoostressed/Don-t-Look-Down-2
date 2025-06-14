@@ -81,6 +81,9 @@ func start_single_player():
 	# Clean up any existing world
 	cleanup()
 	
+	# Explicitly set multiplayer peer to null for single player mode
+	multiplayer.multiplayer_peer = null
+	
 	# Remove menu scene
 	var menu = get_node("/root/Node3D/CanvasLayer/Menu")
 	if menu:

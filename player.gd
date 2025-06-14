@@ -6,7 +6,7 @@ var numJumps = 0
 var maxJumps = 999
 const SENSITIVITY = 0.01
 const SPEED = 7.0
-const JUMP_VELOCITY = 10
+const JUMP_VELOCITY = 35
 const LADDER_CLIMB_SPEED = 4.0
 
 # Coyote time for better jumping
@@ -37,8 +37,8 @@ func _ready():
 	print("[AUTHORITY] Current authority: ", get_multiplayer_authority(), " | Has authority: ", is_multiplayer_authority())
 	print("[AUTHORITY] My unique ID: ", multiplayer.get_unique_id())
 	
-	# Only enable input and camera for the local player
-	if is_multiplayer_authority():
+	# Enable input and camera for single player or if we have authority
+	if multiplayer.multiplayer_peer == null or is_multiplayer_authority():
 		print("[AUTHORITY] Setting up local player controls")
 		# Set up camera
 		if camera:
@@ -68,7 +68,7 @@ func _ready():
 		set_physics_process(false)
 
 func _unhandled_input(event):
-	if not is_multiplayer_authority():
+	if multiplayer.multiplayer_peer != null and not is_multiplayer_authority():
 		return
 		
 	if event is InputEventMouseMotion:
@@ -77,7 +77,7 @@ func _unhandled_input(event):
 		camera.rotation.x = clamp(camera.rotation.x, deg_to_rad(-90), deg_to_rad(90))
 
 func _physics_process(delta: float) -> void:
-	if not is_multiplayer_authority():
+	if multiplayer.multiplayer_peer != null and not is_multiplayer_authority():
 		return
 		
 	# Reset ladder state each frame

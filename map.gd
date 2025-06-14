@@ -109,6 +109,11 @@ func start_single_player():
 	single_player.set_multiplayer_authority(1)
 	print("Map: Single player authority set to: ", single_player.get_multiplayer_authority())
 	
+	# Enable input and physics processing
+	single_player.set_process_input(true)
+	single_player.set_physics_process(true)
+	print("Map: Input and physics processing enabled")
+	
 	# Set up camera
 	if single_player.has_node("Head/Camera3D"):
 		var camera = single_player.get_node("Head/Camera3D")
@@ -596,17 +601,27 @@ func generate_platforms():
 
 func _process(delta: float) -> void:
 	if visible:  # Only check win condition if world is visible
+		print("Map: _process called, world is visible")
 		checkWin()
-	#lava.rise()
+	else:
+		print("Map: _process called, world is not visible")
 
 func checkWin():
-	if not multiplayer.is_server():
+	print("\n=== Checking Win Condition ===")
+	print("Is Server: ", multiplayer.is_server())
+	print("Multiplayer Peer: ", multiplayer.multiplayer_peer)
+	
+	# For single player, we don't need to check if we're the server
+	if multiplayer.multiplayer_peer != null and not multiplayer.is_server():
+		print("Not server in multiplayer mode, returning")
 		return
 		
 	# Get all platforms and find the highest one
 	var platforms = get_tree().get_nodes_in_group("platform") + get_tree().get_nodes_in_group("ice")
+	print("Found platforms: ", platforms.size())
 	
 	if platforms.size() == 0:
+		print("No platforms found, returning")
 		return
 	
 	# Find the highest platform
@@ -617,28 +632,53 @@ func checkWin():
 				highest_platform = platform
 	
 	if highest_platform == null:
+		print("No valid highest platform found, returning")
 		return
 		
+	print("Highest platform position: ", highest_platform.global_position)
+		
 	# Check if player exists and is valid
-	if not player or not is_instance_valid(player):
+	var current_player = null
+	
+	# Check if we're in single player mode by checking if multiplayer peer is null
+	if multiplayer.multiplayer_peer == null:
+		# Single player mode - use the player from players dictionary
+		current_player = players.get(1)
+		print("Single player mode - Player from dictionary: ", current_player)
+	else:
+		# Multiplayer mode - use the player variable
+		current_player = player
+		print("Multiplayer mode - Player from variable: ", current_player)
+		
+	if not current_player or not is_instance_valid(current_player):
+		print("No valid player found, returning")
 		return
 	
+	print("Current player position: ", current_player.global_position)
+	
 	# Check if player is within the area of the highest platform
-	var player_pos = player.global_position
+	var player_pos = current_player.global_position
 	var platform_pos = highest_platform.global_position
 	
 	var x_distance = abs(player_pos.x - platform_pos.x)
 	var z_distance = abs(player_pos.z - platform_pos.z)
 	var y_distance = abs(player_pos.y - platform_pos.y)
 	
+	print("Distances - X: ", x_distance, " Z: ", z_distance, " Y: ", y_distance)
+	print("Platform dimensions - Width: ", platform_half_width, " Depth: ", platform_half_depth)
+	
 	if (x_distance <= platform_half_width and 
 		z_distance <= platform_half_depth and 
 		y_distance <= 3.0):
+		print("Win condition met!")
 		if has_node("Stats"):
 			var stats = get_node("Stats")
 			stats.record_clear()
 			stats.save_stats()
 		get_tree().change_scene_to_file("res://win_screen.tscn")
+	else:
+		print("Win condition not met")
+	print("===========================\n")
 
 @rpc("any_peer", "reliable")
 func _on_player_death():

@@ -74,10 +74,13 @@ func _on_connected_to_server() -> void:
 	# Request player spawn
 	if has_node("/root/Map"):
 		var map = get_node("/root/Map")
+		print("NetworkHandler: Found Map node at path: ", map.get_path())
+		print("NetworkHandler: Map node parent: ", map.get_parent().name if map.get_parent() else "No parent")
+		print("NetworkHandler: Sending spawn request to server")
 		map.request_player_spawn.rpc_id(1, spawn_data)
 		print("NetworkHandler: Player spawn requested")
 	else:
-		print("NetworkHandler: Map node not found!")
+		print("NetworkHandler: Map node not found! Available nodes: ", get_tree().root.get_children())
 
 func start_single_player():
 	print("NetworkHandler: Starting single player")

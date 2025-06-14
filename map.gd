@@ -205,8 +205,9 @@ func _spawn(data):
 	
 	var new_player = player_scene.instantiate()
 	
-	# Set the player's name to their peer ID
-	new_player.name = str(multiplayer.get_unique_id())
+	# Set the player's name to the peer ID from the spawn data
+	var peer_id = data.get("id", multiplayer.get_unique_id())
+	new_player.name = str(peer_id)
 	print("Map: Created new player with name: ", new_player.name)
 	
 	# Set initial position
@@ -215,6 +216,10 @@ func _spawn(data):
 	# Add to scene tree
 	add_child(new_player, true)
 	print("Map: Added new player to scene tree")
+	
+	# Set authority to the peer ID
+	new_player.set_multiplayer_authority(peer_id)
+	print("Map: Set player authority to: ", peer_id)
 	
 	# Store reference if this is our local player
 	if new_player.name == str(multiplayer.get_unique_id()):
@@ -479,7 +484,6 @@ func show_win_screen():
 func checkWin():
 	# For single player, we don't need to check if we're the server
 	if multiplayer.multiplayer_peer != null and not multiplayer.is_server():
-		print("Not server in multiplayer mode, returning")
 		return
 		
 	# Get all platforms and find the highest one

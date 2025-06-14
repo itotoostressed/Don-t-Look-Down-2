@@ -29,7 +29,7 @@ func _enter_tree():
 	# Wait a frame to ensure proper node setup
 	await get_tree().process_frame
 	
-	# Set authority
+	# Set authority to the peer ID
 	set_multiplayer_authority(peer_id)
 	print("[AUTHORITY] Authority set to: ", get_multiplayer_authority())
 	print("[AUTHORITY] Has authority: ", is_multiplayer_authority())
@@ -49,6 +49,7 @@ func _ready():
 		# Set up camera
 		if camera:
 			camera.current = true
+			print("[AUTHORITY] Camera set as current for local player")
 		else:
 			print("[AUTHORITY] ERROR - Camera node not found!")
 		
@@ -66,6 +67,7 @@ func _ready():
 		# Disable camera for remote players
 		if camera:
 			camera.current = false
+			print("[AUTHORITY] Camera disabled for remote player")
 		else:
 			print("[AUTHORITY] ERROR - Camera node not found!")
 		

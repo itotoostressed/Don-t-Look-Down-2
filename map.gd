@@ -605,89 +605,35 @@ func generate_platforms():
 
 func _process(delta: float) -> void:
 	if visible:  # Only check win condition if world is visible
-		print("Map: _process called, world is visible")
+		#print("Map: _process called, world is visible")
 		checkWin()
 	else:
 		print("Map: _process called, world is not visible")
 
+func is_multiplayer() -> bool:
+	return multiplayer.multiplayer_peer != null
+
+func show_win_screen():
+	if has_node("Stats"):
+		var stats = get_node("Stats")
+		stats.record_clear()
+		stats.save_stats()
+	get_tree().change_scene_to_file("res://win_screen.tscn")
+
 func checkWin():
-	print("\n=== Checking Win Condition ===")
-	print("Is Server: ", multiplayer.is_server())
-	print("Multiplayer Peer: ", multiplayer.multiplayer_peer)
-	
-	# For single player, we don't need to check if we're the server
-	if multiplayer.multiplayer_peer != null and not multiplayer.is_server():
-		print("Not server in multiplayer mode, returning")
-		return
-		
-	# Get all platforms and find the highest one
-	var platforms = get_tree().get_nodes_in_group("platform") + get_tree().get_nodes_in_group("ice")
-	print("Found platforms: ", platforms.size())
-	
-	if platforms.size() == 0:
-		print("No platforms found, returning")
-		return
-	
-	# Find the highest platform
-	var highest_platform = null
-	for platform in platforms:
-		if platform and is_instance_valid(platform):
-			if highest_platform == null or platform.global_position.y > highest_platform.global_position.y:
-				highest_platform = platform
-	
-	if highest_platform == null:
-		print("No valid highest platform found, returning")
-		return
-		
-	print("Highest platform position: ", highest_platform.global_position)
-	# Check if player exists and is valid
-	var current_player = null
-	
-	# Check if we're in single player mode by checking if multiplayer peer is null
-	if multiplayer.multiplayer_peer == null:
-		# Single player mode - use the player from players dictionary
-		current_player = players.get(1)
-		print("Single player mode - Player from dictionary: ", current_player)
+	if not is_multiplayer():
+		var current_player = players.values()[0]
+		if current_player and current_player.position.y < -100:
+			show_win_screen()
 	else:
-		# Multiplayer mode
+		var current_player = null
 		if multiplayer.is_server():
-			# Host - use the player variable
-			current_player = player
-			print("Multiplayer host mode - Player from variable: ", current_player)
+			current_player = players.get(1)
 		else:
-			# Client - use the player from players dictionary with our ID
 			current_player = players.get(multiplayer.get_unique_id())
-			print("Multiplayer client mode - Player from dictionary: ", current_player)
 		
-	if not current_player or not is_instance_valid(current_player):
-		print("No valid player found, returning")
-		return
-	
-	print("Current player position: ", current_player.global_position)
-	
-	# Check if player is within the area of the highest platform
-	var player_pos = current_player.global_position
-	var platform_pos = highest_platform.global_position
-	
-	var x_distance = abs(player_pos.x - platform_pos.x)
-	var z_distance = abs(player_pos.z - platform_pos.z)
-	var y_distance = abs(player_pos.y - platform_pos.y)
-	
-	print("Distances - X: ", x_distance, " Z: ", z_distance, " Y: ", y_distance)
-	print("Platform dimensions - Width: ", platform_half_width, " Depth: ", platform_half_depth)
-	
-	if (x_distance <= platform_half_width and 
-		z_distance <= platform_half_depth and 
-		y_distance <= 3.0):
-		print("Win condition met!")
-		if has_node("Stats"):
-			var stats = get_node("Stats")
-			stats.record_clear()
-			stats.save_stats()
-		get_tree().change_scene_to_file("res://win_screen.tscn")
-	else:
-		print("Win condition not met")
-	print("===========================\n")
+		if current_player and current_player.position.y < -100:
+			show_win_screen()
 
 @rpc("any_peer", "reliable")
 func _on_player_death():

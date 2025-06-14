@@ -85,21 +85,50 @@ func _ready():
 func start_single_player():
 	print("Map: Starting single player mode")
 	visible = true
+	
+	# Generate platforms and ladders
 	generate_platforms()
 	await get_tree().create_timer(0.1).timeout
 	generate_ladders()
 	
-	# Set up single player
-	if player:
-		player.name = str(1)
-		player.set_multiplayer_authority(1)
-		player.show()
-		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	# Create and set up single player
+	print("Map: Creating single player")
+	var single_player = load("res://player.tscn").instantiate()
+	if not single_player:
+		print("Map: ERROR - Failed to instantiate single player")
+		return
 		
-		# Add to players dictionary
-		players[1] = player
-		
-		print("Map: Single player setup complete")
+	single_player.name = str(1)  # Single player is always ID 1
+	single_player.position = Vector3(0, 5, 0)  # Raised spawn position
+	
+	# Add to scene tree BEFORE setting authority
+	print("Map: Adding single player to scene tree")
+	add_child(single_player, true)
+	
+	# Set authority AFTER adding to tree
+	single_player.set_multiplayer_authority(1)
+	print("Map: Single player authority set to: ", single_player.get_multiplayer_authority())
+	
+	# Set up camera
+	if single_player.has_node("Head/Camera3D"):
+		var camera = single_player.get_node("Head/Camera3D")
+		camera.current = true
+		print("Map: Single player camera set as current")
+		print("Map: Single player camera transform: ", camera.global_transform)
+	else:
+		print("Map: ERROR - Single player camera not found!")
+	
+	# Store in players dictionary
+	players[1] = single_player
+	print("Map: Single player added to players dictionary")
+	
+	# Make sure the player is visible
+	single_player.show()
+	print("Map: Single player visibility set to: ", single_player.visible)
+	
+	# Set mouse mode
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	print("Map: Mouse mode set to captured")
 
 func start_multiplayer_host():
 	print("Map: Starting multiplayer host")

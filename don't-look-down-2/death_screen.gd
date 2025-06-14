@@ -1,0 +1,38 @@
+extends Control
+
+@onready var stats_label = $CenterContainer/VBoxContainer/StatsLabel
+
+# Called when the node enters the scene tree for the first time.
+func _ready() -> void:
+	# Show the cursor
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	
+	# Connect the button's pressed signal to our handler
+	$CenterContainer/VBoxContainer/Button.pressed.connect(_on_return_button_pressed)
+	
+	# Record death and display current stats
+	record_death()
+	display_stats()
+
+func record_death() -> void:
+	var stats = get_node("/root/Stats")
+	if stats:
+		stats.record_death()
+
+func display_stats() -> void:
+	var stats = get_node("/root/Stats")
+	if stats:
+		var stats_data = stats.get_stats()
+		stats_label.text = "Stats at death:\nJumps: " + str(stats_data.jumps) + "\nDeaths: " + str(stats_data.deaths) + "\nClears: " + str(stats_data.clears)
+	else:
+		stats_label.text = "Stats not available"
+
+# Called when the return button is pressed
+func _on_return_button_pressed() -> void:
+	# Change to the menu scene
+	get_tree().change_scene_to_file("res://menu.tscn")
+
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta: float) -> void:
+	pass

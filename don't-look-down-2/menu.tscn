@@ -1,0 +1,138 @@
+[gd_scene load_steps=4 format=3 uid="uid://v113c3g3c8c0"]
+
+[ext_resource type="FontFile" uid="uid://y4tedhsaq5ma" path="res://Minercraftory.ttf" id="1_lti8b"]
+[ext_resource type="Script" uid="uid://b5sj5nrsipstv" path="res://menu.gd" id="1_ouk20"]
+[ext_resource type="Texture2D" uid="uid://dml43kuvbuot" path="res://bg.png" id="2_mae5d"]
+
+[node name="Menu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_ouk20")
+metadata/_edit_use_anchors_ = true
+
+[node name="PanelContainer" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Bg" type="Sprite2D" parent="."]
+position = Vector2(1011, 534)
+texture = ExtResource("2_mae5d")
+
+[node name="ColorRect" type="ColorRect" parent="Bg"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -1011.0
+offset_top = -534.0
+offset_right = -1011.0
+offset_bottom = -534.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.318964, 0.295939, 0.29562, 0.596078)
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Label" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_lti8b")
+theme_override_font_sizes/font_size = 80
+text = "DON'T LOOK DOWN 2"
+horizontal_alignment = 1
+
+[node name="ButtonContainer" type="HBoxContainer" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="StartButton" type="Button" parent="CenterContainer/VBoxContainer/ButtonContainer"]
+custom_minimum_size = Vector2(280, 80)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_lti8b")
+theme_override_font_sizes/font_size = 32
+text = "Single Player"
+
+[node name="HostButton" type="Button" parent="CenterContainer/VBoxContainer/ButtonContainer"]
+custom_minimum_size = Vector2(280, 80)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_lti8b")
+theme_override_font_sizes/font_size = 32
+text = "Host Game"
+
+[node name="JoinButton" type="Button" parent="CenterContainer/VBoxContainer/ButtonContainer"]
+custom_minimum_size = Vector2(280, 80)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_lti8b")
+theme_override_font_sizes/font_size = 32
+text = "Join Game"
+
+[node name="StatsButton" type="Button" parent="CenterContainer/VBoxContainer/ButtonContainer"]
+custom_minimum_size = Vector2(280, 80)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_lti8b")
+theme_override_font_sizes/font_size = 32
+text = "Statistics"
+
+[node name="StatsPanel" type="Panel" parent="CenterContainer/VBoxContainer/ButtonContainer/StatsButton"]
+visible = false
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -150.0
+offset_top = 20.0
+offset_right = 150.0
+offset_bottom = 211.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="StatsContainer" type="VBoxContainer" parent="CenterContainer/VBoxContainer/ButtonContainer/StatsButton/StatsPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+
+[node name="JumpsLabel" type="Label" parent="CenterContainer/VBoxContainer/ButtonContainer/StatsButton/StatsPanel/StatsContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_lti8b")
+theme_override_font_sizes/font_size = 24
+text = "Jumps: 0"
+
+[node name="DeathsLabel" type="Label" parent="CenterContainer/VBoxContainer/ButtonContainer/StatsButton/StatsPanel/StatsContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_lti8b")
+theme_override_font_sizes/font_size = 24
+text = "Deaths: 0"
+
+[node name="ClearsLabel" type="Label" parent="CenterContainer/VBoxContainer/ButtonContainer/StatsButton/StatsPanel/StatsContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_lti8b")
+theme_override_font_sizes/font_size = 24
+text = "Clears: 0"

@@ -1,0 +1,59 @@
+[gd_scene load_steps=11 format=3 uid="uid://dpq6nfagtjfj7"]
+
+[ext_resource type="Script" uid="uid://d3lf7x15q50wu" path="res://map.gd" id="1_p5pve"]
+[ext_resource type="PackedScene" uid="uid://ctsll3aira0xk" path="res://player.tscn" id="1_wijl4"]
+[ext_resource type="Texture2D" uid="uid://dsx68i3hh0bnk" path="res://696.jpg" id="2_e0an3"]
+[ext_resource type="PackedScene" uid="uid://uqx4nqtnn532" path="res://platform.tscn" id="2_p5pve"]
+[ext_resource type="PackedScene" uid="uid://bvlk4d4fpxgw2" path="res://lava.tscn" id="5_urblq"]
+[ext_resource type="PackedScene" uid="uid://iv0otnf28rgx" path="res://stats.tscn" id="7_xxxxx"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_p5pve"]
+sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
+ground_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
+
+[sub_resource type="Sky" id="Sky_urblq"]
+sky_material = SubResource("ProceduralSkyMaterial_p5pve")
+
+[sub_resource type="Environment" id="Environment_iw27f"]
+background_mode = 2
+sky = SubResource("Sky_urblq")
+tonemap_mode = 2
+glow_enabled = true
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_71pa8"]
+albedo_texture = ExtResource("2_e0an3")
+uv1_triplanar = true
+
+[node name="World" type="Node3D"]
+script = ExtResource("1_p5pve")
+
+[node name="Player" parent="." instance=ExtResource("1_wijl4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.27678, 0)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_iw27f")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, 0.75, -0.433013, 0, 0, 0)
+shadow_enabled = true
+
+[node name="Map Builder" type="CSGCombiner3D" parent="."]
+use_collision = true
+
+[node name="Node3D" parent="Map Builder" instance=ExtResource("2_p5pve")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.569, 2.81267, -6.04848)
+visible = false
+
+[node name="floor" type="CSGBox3D" parent="Map Builder"]
+transform = Transform3D(124.701, 0, 0, 0, 124.701, 0, 0, 0, 124.701, 0, 0.14546, 0)
+size = Vector3(1, 0.001, 1)
+material = SubResource("StandardMaterial3D_71pa8")
+
+[node name="lava" parent="." instance=ExtResource("5_urblq")]
+transform = Transform3D(2.5259, 0, 0, 0, 2.5259, 0, 0, 0, 2.5259, 0, -18.7825, 0)
+
+[node name="Stats" parent="." instance=ExtResource("7_xxxxx")]
+
+[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="."]
+spawn_path = NodePath(".")
+spawn_limit = 4

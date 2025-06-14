@@ -28,6 +28,7 @@ var changeDirX = false
 var changeDirZ = false
 
 var players = {}
+var world_generated = false
 
 func _ready():
 	print("Map: _ready called")
@@ -50,10 +51,11 @@ func _ready():
 	
 	# Only generate world on server
 	if multiplayer.is_server():
-		print("Map: Setting up server world")
+		print("Map: Setting up server player")
 		generate_platforms()
 		await get_tree().create_timer(0.1).timeout
 		generate_ladders()
+		world_generated = true
 		
 		# Spawn server's player directly
 		var server_player = spawn_player({"id": 1})
@@ -61,8 +63,26 @@ func _ready():
 			print("Map: Server player spawned successfully")
 	else:
 		print("Map: Setting up client")
+		# Request world generation from server
+		rpc_id(1, "request_world_generation")
 		# Request player spawn from server
 		rpc_id(1, "request_player_spawn")
+
+@rpc("any_peer")
+func request_world_generation():
+	if multiplayer.is_server() and not world_generated:
+		print("Map: Generating world for client")
+		generate_platforms()
+		await get_tree().create_timer(0.1).timeout
+		generate_ladders()
+		world_generated = true
+		# Notify client that world is ready
+		rpc_id(multiplayer.get_remote_sender_id(), "world_generation_complete")
+
+@rpc("reliable")
+func world_generation_complete():
+	print("Map: World generation complete, making world visible")
+	visible = true
 
 @rpc("any_peer")
 func request_player_spawn():
@@ -99,19 +119,10 @@ func spawn_player(data):
 	print("Map: Adding player to scene tree with name: ", new_player.name)
 	add_child(new_player, true)
 	
-	# Set authority explicitly
-	if peer_id == 1:  # Server's player
-		new_player.set_multiplayer_authority(1)
-		print("Map: Set server player authority to 1")
-	else:  # Client's player
-		new_player.set_multiplayer_authority(peer_id)
-		print("Map: Set client player authority to ", peer_id)
-	
 	# Store in players dictionary
 	players[peer_id] = new_player
 	
 	print("Map: Successfully spawned player with peer ID: ", peer_id)
-	print("Map: Player authority: ", new_player.get_multiplayer_authority())
 	print("Map: Player is in tree: ", is_instance_valid(new_player) and new_player.is_inside_tree())
 	print("Map: Player name: ", new_player.name)
 	print("Map: Player path: ", new_player.get_path())

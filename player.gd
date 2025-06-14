@@ -22,13 +22,16 @@ var is_on_ladder = false
 @onready var mesh = $MeshInstance3D
 
 func _enter_tree():
-	# Authority is now set in map.gd's spawn_player function
-	print("Player: Entered tree with name: ", name)
-	print("Player: Initial authority: ", get_multiplayer_authority())
+	# Get the peer ID from the node name
+	var peer_id = int(name)
+	print("Player: Node name: ", name)
+	print("Player: Setting authority to ", peer_id)
+	set_multiplayer_authority(peer_id)
+	print("Player: Authority set to: ", get_multiplayer_authority())
 
 func _ready():
 	print("Player: _ready called")
-	print("Player: Name: ", name)
+	print("Player: Node name: ", name)
 	print("Player: Authority: ", get_multiplayer_authority())
 	print("Player: Is multiplayer authority: ", is_multiplayer_authority())
 	print("Player: My unique ID: ", multiplayer.get_unique_id())

@@ -171,9 +171,10 @@ func start_multiplayer_host():
 	else:
 		print("Map: ERROR - Host player camera not found!")
 	
-	# Store in players dictionary
+	# Store in players dictionary and set player variable
 	players[1] = host_player
-	print("Map: Host player added to players dictionary")
+	player = host_player  # Set the player variable for the host
+	print("Map: Host player added to players dictionary and player variable set")
 	
 	# Make sure the player is visible
 	host_player.show()
@@ -259,6 +260,9 @@ func spawn_player(data):
 			# Make sure the player is visible
 			new_player.show()
 			print("Map: Local player visibility set to: ", new_player.visible)
+			# Set the player variable for local player
+			player = new_player
+			print("Map: Local player variable set")
 		else:
 			camera.current = false
 			print("Map: Camera disabled for remote player")
@@ -636,7 +640,6 @@ func checkWin():
 		return
 		
 	print("Highest platform position: ", highest_platform.global_position)
-		
 	# Check if player exists and is valid
 	var current_player = null
 	
@@ -646,9 +649,15 @@ func checkWin():
 		current_player = players.get(1)
 		print("Single player mode - Player from dictionary: ", current_player)
 	else:
-		# Multiplayer mode - use the player variable
-		current_player = player
-		print("Multiplayer mode - Player from variable: ", current_player)
+		# Multiplayer mode
+		if multiplayer.is_server():
+			# Host - use the player variable
+			current_player = player
+			print("Multiplayer host mode - Player from variable: ", current_player)
+		else:
+			# Client - use the player from players dictionary with our ID
+			current_player = players.get(multiplayer.get_unique_id())
+			print("Multiplayer client mode - Player from dictionary: ", current_player)
 		
 	if not current_player or not is_instance_valid(current_player):
 		print("No valid player found, returning")

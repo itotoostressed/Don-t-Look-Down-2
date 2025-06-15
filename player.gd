@@ -202,4 +202,3 @@ func _on_lava_body_entered(body: Node3D) -> void:
 func _process(_delta):
 	if camera and is_multiplayer_authority():
 		var current_state = camera.current
-		print("[AUTHORITY] Camera state for local player (", name, "): ", current_state, " | Authority: ", get_multiplayer_authority())

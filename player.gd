@@ -51,14 +51,9 @@ func _setup_player():
 		print("[AUTHORITY] Setting up local player controls")
 		# Set up camera
 		if camera:
-			# First disable all other cameras
-			for other_player in get_tree().get_nodes_in_group("players"):
-				if other_player != self and other_player.has_node("Head/Camera3D"):
-					other_player.get_node("Head/Camera3D").current = false
-			
-			# Then enable our camera
+			print("[AUTHORITY] Camera node found, current state: ", camera.current)
 			camera.current = true
-			print("[AUTHORITY] Camera set as current for local player (name: ", name, ")")
+			print("[AUTHORITY] Camera set as current for local player (name: ", name, "), new state: ", camera.current)
 		else:
 			print("[AUTHORITY] ERROR - Camera node not found!")
 		
@@ -75,8 +70,9 @@ func _setup_player():
 		print("[AUTHORITY] Setting up remote player (no input/camera)")
 		# Disable camera for remote players
 		if camera:
+			print("[AUTHORITY] Camera node found for remote, current state: ", camera.current)
 			camera.current = false
-			print("[AUTHORITY] Camera disabled for remote player (name: ", name, ")")
+			print("[AUTHORITY] Camera disabled for remote player (name: ", name, "), new state: ", camera.current)
 		else:
 			print("[AUTHORITY] ERROR - Camera node not found!")
 		
@@ -202,3 +198,8 @@ func _on_lava_body_entered(body: Node3D) -> void:
 	if body and body.is_in_group("players"):
 		print("player died!")
 		call_deferred("_change_to_death_scene")
+
+func _process(_delta):
+	if camera and is_multiplayer_authority():
+		var current_state = camera.current
+		print("[AUTHORITY] Camera state for local player (", name, "): ", current_state, " | Authority: ", get_multiplayer_authority())

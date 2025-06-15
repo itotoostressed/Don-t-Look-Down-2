@@ -1,13 +1,13 @@
 extends Node3D
 
-@onready var player = $Player
+var player = null  # Remove @onready and initialize as null
 @onready var lava = $lava
 @onready var stats = $Stats
 @onready var world = $World
 @onready var platforms = $World/Platforms
 @onready var ladders = $World/Ladders
-var platformScene = load("res://platform.tscn")
-var ladderScene = load("res://ladder.tscn") # Make sure to load your ladder scene
+var platformScene = preload("res://platform.tscn")
+var ladderScene = preload("res://ladder.tscn") # Make sure to load your ladder scene
 var player_scene = preload("res://player.tscn")
 
 # Configuration variables
@@ -55,6 +55,8 @@ func _ready():
 	# Only set up initial player authority if we're the server
 	if multiplayer.is_server():
 		print("Map: Setting up initial player authority")
+		# Try to get the player node if it exists
+		player = get_node_or_null("Player")
 		if player:
 			# Move the player to be a child of the Map node if it isn't already
 			if player.get_parent() != self:
@@ -63,18 +65,17 @@ func _ready():
 				add_child(player)
 				player.global_transform = original_transform
 			player.set_multiplayer_authority(1)  # Server owns the player
-			# Set up server's camera
-			if player.has_node("Head/Camera3D"):
-				player.get_node("Head/Camera3D").current = true
 	else:
-		# Remove the pre-instantiated player for clients
+		# For clients, we'll wait for the MultiplayerSpawner to spawn the player
+		print("Map: Client mode - waiting for player spawn")
+		# Try to get the player node if it exists
+		player = get_node_or_null("Player")
 		if player:
 			print("Map: Removing pre-instantiated player for client")
 			player.queue_free()
 			player = null
 	
-	# Ensure we have the necessary nodes
-	player = get_node_or_null("Player")
+	# Ensure we have the necessary nodes (except Player for clients)
 	world = get_node_or_null("World")
 	platforms = get_node_or_null("World/Platforms")
 	ladders = get_node_or_null("World/Ladders")
@@ -90,7 +91,7 @@ func start_single_player():
 	
 	# Create and set up single player
 	print("Map: Creating single player")
-	var single_player = load("res://player.tscn").instantiate()
+	var single_player = player_scene.instantiate()
 	if not single_player:
 		print("Map: ERROR - Failed to instantiate single player")
 		return
@@ -105,20 +106,6 @@ func start_single_player():
 	# Set authority AFTER adding to tree
 	single_player.set_multiplayer_authority(1)
 	print("Map: Single player authority set to: ", single_player.get_multiplayer_authority())
-	
-	# Enable input and physics processing
-	single_player.set_process_input(true)
-	single_player.set_physics_process(true)
-	print("Map: Input and physics processing enabled")
-	
-	# Set up camera
-	if single_player.has_node("Head/Camera3D"):
-		var camera = single_player.get_node("Head/Camera3D")
-		camera.current = true
-		print("Map: Single player camera set as current")
-		print("Map: Single player camera transform: ", camera.global_transform)
-	else:
-		print("Map: ERROR - Single player camera not found!")
 	
 	# Store player reference
 	player = single_player
@@ -143,7 +130,7 @@ func start_multiplayer_host():
 	
 	# Create and set up host player
 	print("Map: Creating host player")
-	var host_player = load("res://player.tscn").instantiate()
+	var host_player = player_scene.instantiate()
 	if not host_player:
 		print("Map: ERROR - Failed to instantiate host player")
 		return
@@ -158,15 +145,6 @@ func start_multiplayer_host():
 	# Set authority AFTER adding to tree
 	host_player.set_multiplayer_authority(1)
 	print("Map: Host player authority set to: ", host_player.get_multiplayer_authority())
-	
-	# Set up camera
-	if host_player.has_node("Head/Camera3D"):
-		var camera = host_player.get_node("Head/Camera3D")
-		camera.current = true
-		print("Map: Host camera set as current")
-		print("Map: Host camera transform: ", camera.global_transform)
-	else:
-		print("Map: ERROR - Host player camera not found!")
 	
 	# Store player reference
 	player = host_player
@@ -209,6 +187,9 @@ func _spawn(data):
 	var peer_id = data.get("id", multiplayer.get_unique_id())
 	new_player.name = str(peer_id)
 	print("Map: Created new player with name: ", new_player.name)
+	
+	# Add to players group
+	new_player.add_to_group("players")
 	
 	# Set initial position
 	new_player.position = Vector3(0, 5, 0)  # Raised spawn position
@@ -504,35 +485,37 @@ func checkWin():
 		print("No valid highest platform found, returning")
 		return
 
-	# Check if player exists and is valid
-	if not player or not is_instance_valid(player):
-		print("No valid player found, returning")
+	# Get all players in the scene
+	var players = get_tree().get_nodes_in_group("players")
+	if players.size() == 0:
+		print("No players found in scene, returning")
 		return
-	
-	# Check if player is within the area of the highest platform
-	var player_pos = player.global_position
-	var platform_pos = highest_platform.global_position
-	
-	var x_distance = abs(player_pos.x - platform_pos.x)
-	var z_distance = abs(player_pos.z - platform_pos.z)
-	var y_distance = abs(player_pos.y - platform_pos.y)
 
-	
-	if (x_distance <= platform_half_width and 
-		z_distance <= platform_half_depth and 
-		y_distance <= 3.0):
-		print("Win condition met!")
-		if has_node("Stats"):
-			var stats = get_node("Stats")
-			stats.record_clear()
-			stats.save_stats()
+	# Check each player's position
+	for current_player in players:
+		if not current_player or not is_instance_valid(current_player):
+			continue
+			
+		# Check if player is within the area of the highest platform
+		var player_pos = current_player.global_position
+		var platform_pos = highest_platform.global_position
 		
-		# Change to win screen - let it handle cleanup
-		get_tree().change_scene_to_file("res://win_screen.tscn")
-	else:
-		pass
-		#print("Win condition not met")
-	#print("===========================\n")
+		var x_distance = abs(player_pos.x - platform_pos.x)
+		var z_distance = abs(player_pos.z - platform_pos.z)
+		var y_distance = abs(player_pos.y - platform_pos.y)
+		
+		if (x_distance <= platform_half_width and 
+			z_distance <= platform_half_depth and 
+			y_distance <= 3.0):
+			print("Win condition met for player: ", current_player.name)
+			if has_node("Stats"):
+				var stats = get_node("Stats")
+				stats.record_clear()
+				stats.save_stats()
+			
+			# Change to win screen - let it handle cleanup
+			get_tree().change_scene_to_file("res://win_screen.tscn")
+			return
 
 func _on_lava_body_entered(body: Node3D) -> void:
 	if body == player:

@@ -37,22 +37,28 @@ func _enter_tree():
 	# Ensure we're properly set up for networking
 	if synchronizer:
 		synchronizer.set_multiplayer_authority(peer_id)
-		
-	# Force a ready call to ensure proper setup
-	call_deferred("_ready")
+	
+	# Defer the player setup to ensure authority is fully established
+	call_deferred("_setup_player")
 
-func _ready():
-	print("[AUTHORITY] Player ready - Name: ", name)
+func _setup_player():
 	print("[AUTHORITY] Current authority: ", get_multiplayer_authority(), " | Has authority: ", is_multiplayer_authority())
 	print("[AUTHORITY] My unique ID: ", multiplayer.get_unique_id())
+	print("[AUTHORITY] Player name: ", name)
 	
 	# Enable input and camera for single player or if we have authority
 	if multiplayer.multiplayer_peer == null or is_multiplayer_authority():
 		print("[AUTHORITY] Setting up local player controls")
 		# Set up camera
 		if camera:
+			# First disable all other cameras
+			for other_player in get_tree().get_nodes_in_group("players"):
+				if other_player != self and other_player.has_node("Head/Camera3D"):
+					other_player.get_node("Head/Camera3D").current = false
+			
+			# Then enable our camera
 			camera.current = true
-			print("[AUTHORITY] Camera set as current for local player")
+			print("[AUTHORITY] Camera set as current for local player (name: ", name, ")")
 		else:
 			print("[AUTHORITY] ERROR - Camera node not found!")
 		
@@ -70,7 +76,7 @@ func _ready():
 		# Disable camera for remote players
 		if camera:
 			camera.current = false
-			print("[AUTHORITY] Camera disabled for remote player")
+			print("[AUTHORITY] Camera disabled for remote player (name: ", name, ")")
 		else:
 			print("[AUTHORITY] ERROR - Camera node not found!")
 		

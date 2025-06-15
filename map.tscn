@@ -36,7 +36,7 @@ shadow_enabled = true
 [node name="Map Builder" type="CSGCombiner3D" parent="."]
 use_collision = true
 
-[node name="Node3D" parent="Map Builder" instance=ExtResource("2_p5pve")]
+[node name="Platforms" parent="Map Builder" instance=ExtResource("2_p5pve")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.569, 2.81267, -6.04848)
 visible = false
 
@@ -54,3 +54,13 @@ transform = Transform3D(2.5259, 0, 0, 0, 2.5259, 0, 0, 0, 2.5259, 0, -18.7825, 0
 _spawnable_scenes = PackedStringArray("uid://ctsll3aira0xk")
 spawn_path = NodePath("..")
 spawn_limit = 20
+
+[node name="MultiplayerSpawner2" type="MultiplayerSpawner" parent="."]
+_spawnable_scenes = PackedStringArray("uid://uqx4nqtnn532")
+spawn_path = NodePath("../Map Builder")
+spawn_limit = 1000
+
+[node name="MultiplayerSpawner3" type="MultiplayerSpawner" parent="."]
+_spawnable_scenes = PackedStringArray("uid://cuofobr4mhqoo")
+spawn_path = NodePath("..")
+spawn_limit = 1000

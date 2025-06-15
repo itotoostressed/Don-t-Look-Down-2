@@ -40,6 +40,10 @@ func _ready():
 	visible = true
 	print("Map: World visibility set to: ", visible)
 	
+	# Set up spawn functions for the spawners
+	$MultiplayerSpawner2.spawn_function = _spawn_platform
+	$MultiplayerSpawner3.spawn_function = _spawn_ladder
+	
 	# Connect multiplayer signals (only once)
 	if not multiplayer.peer_connected.is_connected(_on_peer_connected):
 		multiplayer.peer_connected.connect(_on_peer_connected)
@@ -169,11 +173,21 @@ func start_multiplayer_client():
 	visible = true
 	print("Map: World visibility set to: ", visible)
 	
-	# Generate platforms and ladders
-	generate_platforms()
-	await get_tree().create_timer(0.1).timeout
-	generate_ladders()
-	print("Map: Platforms and ladders generated")
+	# Ensure world nodes exist
+	world = get_node_or_null("World")
+	if not world:
+		print("Map: ERROR - World node not found!")
+		return
+		
+	platforms = get_node_or_null("World/Platforms")
+	if not platforms:
+		print("Map: ERROR - Platforms node not found!")
+		return
+		
+	ladders = get_node_or_null("World/Ladders")
+	if not ladders:
+		print("Map: ERROR - Ladders node not found!")
+		return
 
 # Called by MultiplayerSpawner when a new player is spawned
 func _spawn(data):
@@ -280,23 +294,15 @@ func generate_ladders():
 			# Scale by platform size to place it at the edge
 			var edge_offset = direction_to_upper * (platform_half_width * 0.8)  # 0.8 to keep it slightly inset
 			
-			# Create and position ladder
-			var ladder = ladderScene.instantiate()
+			# Calculate position for the ladder
+			var ladder_position = lower_platform.global_position + edge_offset + Vector3(0, 3.925, 0)
 			
-			# Position ladder at the edge of the lower platform
-			ladder.global_position = lower_platform.global_position + edge_offset + Vector3(0, 3.925, 0)
+			# Spawn the ladder through the spawner
+			$MultiplayerSpawner3.spawn({
+				"position": ladder_position,
+				"rotation": Vector3(0, deg_to_rad(90) if abs(direction_to_upper.x) > abs(direction_to_upper.z) else 0, 0)
+			})
 			
-			# Check if ladder is on left/right side and rotate accordingly
-			if abs(direction_to_upper.x) > abs(direction_to_upper.z):
-				# Ladder is on left or right side - rotate 90 degrees on Y axis
-				ladder.rotation.y = deg_to_rad(90)
-			else:
-				# Ladder is on front/back - keep normal rotation (face toward upper platform)
-				var look_target = upper_platform.global_position
-				look_target.y = ladder.global_position.y  # Keep ladder vertical
-				ladder.look_at(look_target, Vector3.UP)
-			
-			add_child(ladder)
 			ladders_placed += 1
 			
 			# Use more generous ladder limit
@@ -367,7 +373,6 @@ func generate_platforms():
 	var platform_positions = []
 	
 	for i in range(platform_count):
-		var platform_instance = platformScene.instantiate()
 		var new_position = Vector3.ZERO
 		var valid_position_found = false
 		
@@ -420,23 +425,12 @@ func generate_platforms():
 			# If we can't find a valid position, try to place it within bounds anyway
 			new_position = _clamp_position_to_bounds(new_position)
 		
-		platform_instance.position = new_position
-		
-		# change properties
-		var platformType = randi() % 2 # 0-3 inclusive
-		const REGULAR = 0
-		var ICE_TEXTURE = load("res://ice_texture.tres")
-		var NORMAL_TEXTURE = load("res://wood.tres")
-		const ICE_PLATFORM = 1
-		
-		if(platformType == REGULAR):
-			platform_instance.get_node("texture").material_override = NORMAL_TEXTURE
-			platform_instance.add_to_group("platform")
-		if (platformType == ICE_PLATFORM):
-			platform_instance.get_node("texture").material_override = ICE_TEXTURE
-			platform_instance.add_to_group("ice")
-		# instantiate platform
-		add_child(platform_instance)
+		# Spawn the platform through the spawner
+		var platformType = randi() % 2  # 0-1 inclusive
+		$MultiplayerSpawner2.spawn({
+			"position": new_position,
+			"type": platformType  # 0 for regular, 1 for ice
+		})
 		
 		platform_positions.append({
 			"position": new_position,
@@ -444,6 +438,27 @@ func generate_platforms():
 			"half_depth": platform_half_depth
 		})
 		last_position = new_position
+
+# Add spawn functions for the spawners
+func _spawn_platform(data):
+	var platform = platformScene.instantiate()
+	platform.position = data.position
+	
+	# Set platform type
+	if data.type == 1:  # Ice platform
+		platform.get_node("texture").material_override = load("res://ice_texture.tres")
+		platform.add_to_group("ice")
+	else:  # Regular platform
+		platform.get_node("texture").material_override = load("res://wood.tres")
+		platform.add_to_group("platform")
+	
+	return platform
+
+func _spawn_ladder(data):
+	var ladder = ladderScene.instantiate()
+	ladder.position = data.position
+	ladder.rotation = data.rotation
+	return ladder
 
 func _process(delta: float) -> void:
 	if visible:  # Only check win condition if world is visible
@@ -525,3 +540,61 @@ func _on_lava_body_entered(body: Node3D) -> void:
 		else:
 			# Notify server of death
 			rpc_id(1, "_on_player_death")
+
+@rpc("any_peer", "reliable")
+func request_world_data():
+	if multiplayer.is_server():
+		print("Map: Server received world data request from peer: ", multiplayer.get_remote_sender_id())
+		# Send platform and ladder data to the requesting client
+		var platform_data = []
+		var ladder_data = []
+		
+		# Collect platform data
+		for platform in platforms.get_children():
+			platform_data.append({
+				"position": platform.position,
+				"rotation": platform.rotation,
+				"scale": platform.scale
+			})
+		
+		# Collect ladder data
+		for ladder in ladders.get_children():
+			ladder_data.append({
+				"position": ladder.position,
+				"rotation": ladder.rotation,
+				"scale": ladder.scale
+			})
+		
+		print("Map: Sending ", platform_data.size(), " platforms and ", ladder_data.size(), " ladders to peer: ", multiplayer.get_remote_sender_id())
+		
+		# Send data to requesting client
+		rpc_id(multiplayer.get_remote_sender_id(), "receive_world_data", platform_data, ladder_data)
+		print("Map: Sent world data to peer: ", multiplayer.get_remote_sender_id())
+
+@rpc("authority", "reliable")
+func receive_world_data(platform_data, ladder_data):
+	print("Map: Received world data from server - Platforms: ", platform_data.size(), " Ladders: ", ladder_data.size())
+	
+	# Clear existing platforms and ladders
+	for child in platforms.get_children():
+		child.queue_free()
+	for child in ladders.get_children():
+		child.queue_free()
+	
+	# Create platforms from received data
+	for data in platform_data:
+		var platform = platformScene.instantiate()
+		platforms.add_child(platform)
+		platform.position = data.position
+		platform.rotation = data.rotation
+		platform.scale = data.scale
+	
+	# Create ladders from received data
+	for data in ladder_data:
+		var ladder = ladderScene.instantiate()
+		ladders.add_child(ladder)
+		ladder.position = data.position
+		ladder.rotation = data.rotation
+		ladder.scale = data.scale
+	
+	print("Map: World replication complete - Created ", platform_data.size(), " platforms and ", ladder_data.size(), " ladders")

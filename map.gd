@@ -84,14 +84,149 @@ func _ready():
 	platforms = get_node_or_null("World/Platforms")
 	ladders = get_node_or_null("World/Ladders")
 
+func generate_platforms_single_player():
+	var last_position = Vector3(0, -2.5, 0)  # Set initial platform at y=2 instead of y=0
+	var platform_positions = []
+	
+	for i in range(platform_count):
+		var platform_instance = platformScene.instantiate()
+		var new_position = Vector3.ZERO
+		var valid_position_found = false
+		
+		for attempt in range(platform_count * 2):  # Increased attempts since we have more constraints
+			var y_increase = randf_range(min_y_increase, max_y_increase)
+			# Calculate random offsets
+			if (i == 0):
+				y_increase = 3
+			
+			# Separate direction changes with different probabilities
+			if randf() > 0.35:  # 35% chance to flip X direction
+				changeDirX = !changeDirX
+			if randf() > 0.45:  # 45% chance to flip Z direction
+				changeDirZ = !changeDirZ
+			
+			# Generate varied X offset with actual variation
+			var x_offset = randf_range(1.5, 6.0)  # Range from 1.5 to 6.0 units
+			if randf() > 0.85:  # 15% chance to not move in X at all
+				x_offset = 0
+			elif not changeDirX:
+				x_offset *= -1  # Apply negative direction if changeDirX is false
+			
+			# Generate varied Z offset with actual variation  
+			var z_offset = randf_range(2.0, 8.0)  # Range from 2.0 to 8.0 units
+			if randf() > 0.8:   # 20% chance to not move in Z at all
+				z_offset = 0
+			elif not changeDirZ:
+				z_offset *= -1  # Apply negative direction if changeDirZ is false
+			
+			# Optional: Add cluster mode for tight groups
+			if randf() > 0.9:  # 10% chance for cluster mode
+				x_offset = randf_range(0.5, 2.0)
+				z_offset = randf_range(0.5, 2.0)
+				if not changeDirX: x_offset *= -1
+				if not changeDirZ: z_offset *= -1
+			
+			new_position = Vector3(
+				last_position.x + x_offset,
+				last_position.y + y_increase,
+				last_position.z + z_offset
+			)
+			
+			# Check if position is within bounds
+			if _position_within_bounds(new_position) and not _position_overlaps(new_position, platform_positions):
+				valid_position_found = true
+				break
+		
+		if not valid_position_found:
+			print("Warning: Couldn't find valid position after ", platform_count * 2, " attempts")
+			# If we can't find a valid position, try to place it within bounds anyway
+			new_position = _clamp_position_to_bounds(new_position)
+		
+		platform_instance.position = new_position
+		
+		# change properties
+		var platformType = randi() % 2 # 0-3 inclusive
+		const REGULAR = 0
+		var ICE_TEXTURE = load("res://ice_texture.tres")
+		var NORMAL_TEXTURE = load("res://wood.tres")
+		const ICE_PLATFORM = 1
+		
+		if(platformType == REGULAR):
+			platform_instance.get_node("texture").material_override = NORMAL_TEXTURE
+			platform_instance.add_to_group("platform")
+		if (platformType == ICE_PLATFORM):
+			platform_instance.get_node("texture").material_override = ICE_TEXTURE
+			platform_instance.add_to_group("ice")
+		# instantiate platform
+		add_child(platform_instance)
+		
+		platform_positions.append({
+			"position": new_position,
+			"half_width": platform_half_width,
+			"half_depth": platform_half_depth
+		})
+		last_position = new_position
+
+func generate_ladders_single_player():
+	var platforms = get_tree().get_nodes_in_group("platform") + get_tree().get_nodes_in_group("ice")
+	var ladders_placed = 0
+	
+	# Sort platforms by height
+	platforms.sort_custom(func(a, b): return a.global_position.y < b.global_position.y)
+	
+	if platforms.size() < 2:
+		print("Not enough platforms for ladders!")
+		return
+	
+	for i in range(platforms.size() - 1):
+		var lower_platform = platforms[i]
+		var upper_platform = platforms[i + 1]
+		var height_diff = upper_platform.global_position.y - lower_platform.global_position.y
+		
+		if height_diff >= 2.5:
+			# Calculate the direction from lower to upper platform
+			var direction_to_upper = upper_platform.global_position - lower_platform.global_position
+			direction_to_upper.y = 0  # Remove vertical component for horizontal direction only
+			direction_to_upper = direction_to_upper.normalized()
+			
+			# Calculate ladder position on the edge of the lower platform
+			# Scale by platform size to place it at the edge
+			var edge_offset = direction_to_upper * (platform_half_width * 0.8)  # 0.8 to keep it slightly inset
+			
+			# Create and position ladder
+			var ladder = ladderScene.instantiate()
+			
+			# Position ladder at the edge of the lower platform
+			ladder.global_position = lower_platform.global_position + edge_offset + Vector3(0, 3.925, 0)
+			
+			# Check if ladder is on left/right side and rotate accordingly
+			if abs(direction_to_upper.x) > abs(direction_to_upper.z):
+				# Ladder is on left or right side - rotate 90 degrees on Y axis
+				ladder.rotation.y = deg_to_rad(90)
+			else:
+				# Ladder is on front/back - keep normal rotation (face toward upper platform)
+				var look_target = upper_platform.global_position
+				look_target.y = ladder.global_position.y  # Keep ladder vertical
+				ladder.look_at(look_target, Vector3.UP)
+			
+			add_child(ladder)
+			ladders_placed += 1
+			
+			# Use more generous ladder limit
+			if ladders_placed >= platform_count:
+				break
+
 func start_single_player():
 	print("Map: Starting single player mode")
 	visible = true
 	
-	# Generate platforms and ladders
-	generate_platforms()
+	# Generate platforms and ladders using our existing functions
+	generate_platforms_single_player()
 	await get_tree().create_timer(0.1).timeout
-	generate_ladders()
+	generate_ladders_single_player()
+	
+	# Start lava rising in single player
+	$lava.call_deferred("rise")
 	
 	# Create and set up single player
 	print("Map: Creating single player")
@@ -173,21 +308,25 @@ func start_multiplayer_client():
 	visible = true
 	print("Map: World visibility set to: ", visible)
 	
-	# Ensure world nodes exist
+	# Ensure world nodes exist and are valid
 	world = get_node_or_null("World")
-	if not world:
-		print("Map: ERROR - World node not found!")
+	if not world or not is_instance_valid(world):
+		print("Map: ERROR - World node not found or invalid!")
 		return
 		
 	platforms = get_node_or_null("World/Platforms")
-	if not platforms:
-		print("Map: ERROR - Platforms node not found!")
+	if not platforms or not is_instance_valid(platforms):
+		print("Map: ERROR - Platforms node not found or invalid!")
 		return
 		
 	ladders = get_node_or_null("World/Ladders")
-	if not ladders:
-		print("Map: ERROR - Ladders node not found!")
+	if not ladders or not is_instance_valid(ladders):
+		print("Map: ERROR - Ladders node not found or invalid!")
 		return
+	
+	# Request world data from server
+	rpc_id(1, "request_world_data")
+	print("Map: Requested world data from server")
 
 # Called by MultiplayerSpawner when a new player is spawned
 func _spawn(data):
@@ -238,6 +377,10 @@ func _on_peer_connected(id: int):
 		print("Map: Server received new peer connection: ", id)
 		# Spawn the player for the new peer
 		$MultiplayerSpawner.spawn({"id": id})
+		# Start the lava rising when first client joins
+		$lava.call_deferred("rise")
+		# Send world data to the new client
+		rpc_id(id, "receive_world_data", get_platform_data(), get_ladder_data())
 
 func _on_peer_disconnected(id: int):
 	print("Map: Peer disconnected signal received for ID: ", id)
@@ -475,6 +618,11 @@ func show_win_screen():
 		var stats = get_node("Stats")
 		stats.record_clear()
 		stats.save_stats()
+	
+	# Pause only the map scene
+	process_mode = Node.PROCESS_MODE_DISABLED
+	
+	# Change to win screen
 	get_tree().change_scene_to_file("res://win_screen.tscn")
 
 func checkWin():
@@ -523,23 +671,19 @@ func checkWin():
 			z_distance <= platform_half_depth and 
 			y_distance <= 3.0):
 			print("Win condition met for player: ", current_player.name)
+			
+			# Pause the map scene first using call_deferred
+			call_deferred("set_process_mode", Node.PROCESS_MODE_DISABLED)
+			
+			# Record win in stats
 			if has_node("Stats"):
 				var stats = get_node("Stats")
 				stats.record_clear()
 				stats.save_stats()
 			
-			# Change to win screen - let it handle cleanup
+			# Change to win screen
 			get_tree().change_scene_to_file("res://win_screen.tscn")
 			return
-
-func _on_lava_body_entered(body: Node3D) -> void:
-	if body == player:
-		if multiplayer.is_server():
-			# Handle death on server
-			get_tree().change_scene_to_file("res://death_screen.tscn")
-		else:
-			# Notify server of death
-			rpc_id(1, "_on_player_death")
 
 @rpc("any_peer", "reliable")
 func request_world_data():
@@ -571,30 +715,75 @@ func request_world_data():
 		rpc_id(multiplayer.get_remote_sender_id(), "receive_world_data", platform_data, ladder_data)
 		print("Map: Sent world data to peer: ", multiplayer.get_remote_sender_id())
 
+func get_platform_data():
+	var platform_data = []
+	if platforms and is_instance_valid(platforms):
+		for platform in platforms.get_children():
+			if platform and is_instance_valid(platform):
+				platform_data.append({
+					"position": platform.position,
+					"rotation": platform.rotation,
+					"scale": platform.scale,
+					"type": 1 if platform.is_in_group("ice") else 0
+				})
+	return platform_data
+
+func get_ladder_data():
+	var ladder_data = []
+	if ladders and is_instance_valid(ladders):
+		for ladder in ladders.get_children():
+			if ladder and is_instance_valid(ladder):
+				ladder_data.append({
+					"position": ladder.position,
+					"rotation": ladder.rotation,
+					"scale": ladder.scale
+				})
+	return ladder_data
+
 @rpc("authority", "reliable")
 func receive_world_data(platform_data, ladder_data):
 	print("Map: Received world data from server - Platforms: ", platform_data.size(), " Ladders: ", ladder_data.size())
 	
+	# Ensure we have valid nodes
+	if not platforms or not is_instance_valid(platforms):
+		print("Map: ERROR - Platforms node not found or invalid!")
+		return
+	if not ladders or not is_instance_valid(ladders):
+		print("Map: ERROR - Ladders node not found or invalid!")
+		return
+	
 	# Clear existing platforms and ladders
 	for child in platforms.get_children():
-		child.queue_free()
+		if child and is_instance_valid(child):
+			child.queue_free()
 	for child in ladders.get_children():
-		child.queue_free()
+		if child and is_instance_valid(child):
+			child.queue_free()
 	
 	# Create platforms from received data
 	for data in platform_data:
 		var platform = platformScene.instantiate()
-		platforms.add_child(platform)
-		platform.position = data.position
-		platform.rotation = data.rotation
-		platform.scale = data.scale
+		if platform:
+			platforms.add_child(platform)
+			platform.position = data.position
+			platform.rotation = data.rotation
+			platform.scale = data.scale
+			
+			# Set platform type
+			if data.type == 1:  # Ice platform
+				platform.get_node("texture").material_override = load("res://ice_texture.tres")
+				platform.add_to_group("ice")
+			else:  # Regular platform
+				platform.get_node("texture").material_override = load("res://wood.tres")
+				platform.add_to_group("platform")
 	
 	# Create ladders from received data
 	for data in ladder_data:
 		var ladder = ladderScene.instantiate()
-		ladders.add_child(ladder)
-		ladder.position = data.position
-		ladder.rotation = data.rotation
-		ladder.scale = data.scale
+		if ladder:
+			ladders.add_child(ladder)
+			ladder.position = data.position
+			ladder.rotation = data.rotation
+			ladder.scale = data.scale
 	
 	print("Map: World replication complete - Created ", platform_data.size(), " platforms and ", ladder_data.size(), " ladders")

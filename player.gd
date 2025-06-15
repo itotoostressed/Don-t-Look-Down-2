@@ -191,14 +191,8 @@ func check_win_condition():
 	if map.has_method("checkWin"):
 		map.checkWin()
 
-func _change_to_death_scene():
-	get_tree().change_scene_to_file("res://death_screen.tscn")
-
-func _on_lava_body_entered(body: Node3D) -> void:
-	if body and body.is_in_group("players"):
-		print("player died!")
-		call_deferred("_change_to_death_scene")
-
 func _process(_delta):
 	if camera and is_multiplayer_authority():
 		var current_state = camera.current
+	else:
+		pass

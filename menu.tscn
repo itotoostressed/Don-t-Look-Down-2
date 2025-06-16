@@ -87,6 +87,14 @@ theme_override_fonts/font = ExtResource("1_lti8b")
 theme_override_font_sizes/font_size = 32
 text = "Join Game"
 
+[node name="IPInput" type="LineEdit" parent="CenterContainer/VBoxContainer/ButtonContainer"]
+custom_minimum_size = Vector2(280, 40)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_lti8b")
+theme_override_font_sizes/font_size = 24
+placeholder_text = "Enter IP Address (default: localhost)"
+text = "localhost"
+
 [node name="StatsButton" type="Button" parent="CenterContainer/VBoxContainer/ButtonContainer"]
 custom_minimum_size = Vector2(280, 80)
 layout_mode = 2

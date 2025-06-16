@@ -6,6 +6,7 @@ extends Control
 @onready var start_button = $CenterContainer/VBoxContainer/ButtonContainer/StartButton
 @onready var host_button = $CenterContainer/VBoxContainer/ButtonContainer/HostButton
 @onready var join_button = $CenterContainer/VBoxContainer/ButtonContainer/JoinButton
+@onready var ip_input = $CenterContainer/VBoxContainer/ButtonContainer/IPInput
 
 var is_connecting = false
 
@@ -79,10 +80,15 @@ func _on_join_button_pressed() -> void:
 		
 	is_connecting = true
 	
+	# Get IP from input field
+	var ip = ip_input.text.strip_edges()
+	if ip.is_empty():
+		ip = "localhost"
+	
 	# Join as client
 	hide()  # Hide menu
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)  # Capture mouse for game
-	get_node("/root/NetworkHandler").start_client()
+	get_node("/root/NetworkHandler").start_client(ip)
 	is_connecting = false
 
 func _on_stats_updated() -> void:

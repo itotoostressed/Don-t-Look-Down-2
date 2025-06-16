@@ -8,7 +8,6 @@ var player = null  # Remove @onready and initialize as null
 @onready var ladders = $World/Ladders
 @onready var gametrack = $Gametrack
 
-
 var platformScene = preload("res://platform.tscn")
 var ladderScene = preload("res://ladder.tscn") # Make sure to load your ladder scene
 var player_scene = preload("res://player.tscn")

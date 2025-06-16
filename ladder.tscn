@@ -3,7 +3,7 @@
 [ext_resource type="PackedScene" uid="uid://c52lu5uvoiumv" path="res://ladder/scene.gltf" id="1_cq4ai"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_cq4ai"]
-size = Vector3(0.2, 7.85, 0.8)
+size = Vector3(0.2, 7.85, 1)
 
 [node name="Ladder" groups=["ladder"] instance=ExtResource("1_cq4ai")]
 
@@ -11,7 +11,7 @@ size = Vector3(0.2, 7.85, 0.8)
 transform = Transform3D(0.01, 0, 0, 0, -8.74228e-10, -0.01, 0, 0.02, -4.37114e-10, 0, 0, 0)
 
 [node name="Symmetry__0" parent="Sketchfab_model/f08dcaa7e13e45baa3c2de2d667404d4_fbx/RootNode/Symmetry" index="0"]
-transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, 0, 0, 0)
+transform = Transform3D(-4.37114e-08, 0, 1.46548, 0, 1, -4.23516e-22, -1, 0, -6.40582e-08, 0, 0, 0)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." index="1"]
 transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, 0, 0, 0)

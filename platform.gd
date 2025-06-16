@@ -19,7 +19,9 @@ func _on_body_shape_entered(body_rid: RID, body: Node3D, _body_shape_index: int,
 	if body and body.is_in_group("players"):
 		player_on_platform = true
 		if not has_disappeared:
-			disappear()
+			# 30% chance to disappear
+			if randf_range(0, 1) < 0.3:
+				disappear()
 
 func _on_body_entered(body: Node3D) -> void:
 	# Check if body is valid before proceeding
@@ -34,7 +36,9 @@ func _on_body_entered(body: Node3D) -> void:
 	# Only trigger if the body is the player and hasn't disappeared
 	if is_player and not has_disappeared:
 		player_on_platform = true
-		disappear()
+		# 30% chance to disappear
+		if randf_range(0, 1) < 0.3:
+			disappear()
 
 func _on_body_exited(body: Node3D) -> void:
 	if body and body.is_in_group("players"):

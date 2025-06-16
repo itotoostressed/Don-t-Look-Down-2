@@ -7,7 +7,7 @@ var player = null  # Remove @onready and initialize as null
 @onready var platforms = $World/Platforms
 @onready var ladders = $World/Ladders
 @onready var gametrack = $Gametrack
-@onready var victorytrack = $Vicotry
+
 
 var platformScene = preload("res://platform.tscn")
 var ladderScene = preload("res://ladder.tscn") # Make sure to load your ladder scene
@@ -683,8 +683,6 @@ func checkWin():
 				var stats = get_node("Stats")
 				stats.record_clear()
 				stats.save_stats()
-			
-			call_deferred(victorytrack.play())
 			
 			# Change to win screen
 			get_tree().change_scene_to_file("res://win_screen.tscn")

@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://dmn4goj0tqdyb"]
+[gd_scene load_steps=4 format=3 uid="uid://dmn4goj0tqdyb"]
 
 [ext_resource type="Script" uid="uid://bi3cnow01bpbl" path="res://win_screen.gd" id="1_l2arl"]
 [ext_resource type="FontFile" uid="uid://y4tedhsaq5ma" path="res://Minercraftory.ttf" id="2_font"]
+[ext_resource type="AudioStream" uid="uid://crfgkjowfrgi2" path="res://victory.mp3" id="3_l5t5q"]
 
 [node name="winScreen" type="Control"]
 layout_mode = 3
@@ -29,11 +30,9 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 1
 
 [node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
 layout_mode = 2
-mouse_filter = 1
 
 [node name="Label" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
@@ -47,3 +46,6 @@ layout_mode = 2
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 27
 text = "Return to Menu"
+
+[node name="Vicotry" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("3_l5t5q")

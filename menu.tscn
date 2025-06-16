@@ -24,20 +24,23 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Bg" type="Sprite2D" parent="."]
-position = Vector2(1011, 534)
+position = Vector2(643, 363)
+scale = Vector2(1.04488, 1.03597)
 texture = ExtResource("2_mae5d")
 
 [node name="ColorRect" type="ColorRect" parent="Bg"]
-anchors_preset = 15
-anchor_right = 1.0
+anchors_preset = -1
+anchor_top = -0.0507757
+anchor_right = 1.05354
 anchor_bottom = 1.0
-offset_left = -1011.0
-offset_top = -534.0
-offset_right = -1011.0
-offset_bottom = -534.0
+offset_left = -669.932
+offset_top = -324.05
+offset_right = -669.932
+offset_bottom = -324.05
 grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.318964, 0.295939, 0.29562, 0.596078)
+metadata/_edit_use_anchors_ = true
 
 [node name="CenterContainer" type="CenterContainer" parent="."]
 layout_mode = 1

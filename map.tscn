@@ -36,6 +36,7 @@ environment = SubResource("Environment_iw27f")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(-0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, 0.75, -0.433013, 0, 0, 0)
+light_color = Color(0.696191, 0.166036, 0.258406, 1)
 shadow_enabled = true
 
 [node name="Map Builder" type="CSGCombiner3D" parent="."]

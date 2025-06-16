@@ -6,7 +6,7 @@ var numJumps = 0
 var maxJumps = 2
 const SENSITIVITY = 0.01
 const SPEED = 7.0
-const JUMP_VELOCITY = 10
+const JUMP_VELOCITY = 50
 const LADDER_CLIMB_SPEED = 4.0
 
 # Coyote time for better jumping

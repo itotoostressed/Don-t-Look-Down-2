@@ -3,3 +3,4 @@
 [ext_resource type="PackedScene" uid="uid://bl4fougfy13tp" path="res://hellscape.glb" id="1_3wajt"]
 
 [node name="Sketchfab_Scene" instance=ExtResource("1_3wajt")]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, 0, 0, 0)

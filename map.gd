@@ -6,6 +6,9 @@ var player = null  # Remove @onready and initialize as null
 @onready var world = $World
 @onready var platforms = $World/Platforms
 @onready var ladders = $World/Ladders
+@onready var gametrack = $Gametrack
+@onready var victorytrack = $Vicotry
+
 var platformScene = preload("res://platform.tscn")
 var ladderScene = preload("res://ladder.tscn") # Make sure to load your ladder scene
 var player_scene = preload("res://player.tscn")
@@ -35,7 +38,7 @@ var test_number = 0
 
 func _ready():
 	print("Map: _ready called")
-	
+	gametrack.play()
 	# Make sure the world is visible from the start
 	visible = true
 	print("Map: World visibility set to: ", visible)
@@ -680,6 +683,8 @@ func checkWin():
 				var stats = get_node("Stats")
 				stats.record_clear()
 				stats.save_stats()
+			
+			call_deferred(victorytrack.play())
 			
 			# Change to win screen
 			get_tree().change_scene_to_file("res://win_screen.tscn")

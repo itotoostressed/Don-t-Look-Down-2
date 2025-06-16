@@ -1,10 +1,11 @@
-[gd_scene load_steps=13 format=3 uid="uid://dpq6nfagtjfj7"]
+[gd_scene load_steps=14 format=3 uid="uid://dpq6nfagtjfj7"]
 
 [ext_resource type="Script" uid="uid://d3lf7x15q50wu" path="res://map.gd" id="1_p5pve"]
 [ext_resource type="Texture2D" uid="uid://dsx68i3hh0bnk" path="res://696.jpg" id="2_e0an3"]
 [ext_resource type="PackedScene" uid="uid://uqx4nqtnn532" path="res://platform.tscn" id="2_p5pve"]
 [ext_resource type="PackedScene" uid="uid://bvlk4d4fpxgw2" path="res://lava.tscn" id="5_urblq"]
 [ext_resource type="AudioStream" uid="uid://dse4ojyhjnwwn" path="res://gameTrack.mp3" id="6_iw27f"]
+[ext_resource type="AudioStream" uid="uid://crfgkjowfrgi2" path="res://victory.mp3" id="7_05x41"]
 [ext_resource type="PackedScene" uid="uid://cs3caxs4akva2" path="res://hellscape.tscn" id="7_71pa8"]
 [ext_resource type="PackedScene" uid="uid://iv0otnf28rgx" path="res://stats.tscn" id="7_xxxxx"]
 
@@ -52,7 +53,7 @@ size = Vector3(1, 0.001, 1)
 material = SubResource("StandardMaterial3D_71pa8")
 
 [node name="lava" parent="." instance=ExtResource("5_urblq")]
-transform = Transform3D(2.5259, 0, 0, 0, 2.5259, 0, 0, 0, 2.5259, 0, -18.7825, 0)
+transform = Transform3D(2.5259, 0, 0, 0, 2.5259, 0, 0, 0, 2.5259, 0, -149.036, 0)
 
 [node name="Stats" parent="." instance=ExtResource("7_xxxxx")]
 
@@ -71,8 +72,11 @@ _spawnable_scenes = PackedStringArray("uid://cuofobr4mhqoo")
 spawn_path = NodePath("..")
 spawn_limit = 1000
 
-[node name="AudioStreamPlayer3D" type="AudioStreamPlayer3D" parent="."]
+[node name="Gametrack" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("6_iw27f")
+
+[node name="Vicotry" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("7_05x41")
 
 [node name="Sketchfab_Scene" parent="." instance=ExtResource("7_71pa8")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -130.729, 142.266, 3468.8)

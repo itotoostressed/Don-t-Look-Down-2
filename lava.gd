@@ -6,7 +6,7 @@ var is_rising = false
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta: float) -> void:
 	if is_rising:
-		global_position.y += .03
+		global_position.y += .1
 
 func rise():
 	is_rising = true

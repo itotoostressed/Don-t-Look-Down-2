@@ -24,7 +24,7 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Bg" type="Sprite2D" parent="."]
-position = Vector2(643, 363)
+position = Vector2(969, 536)
 scale = Vector2(1.04488, 1.03597)
 texture = ExtResource("2_mae5d")
 
@@ -33,10 +33,10 @@ anchors_preset = -1
 anchor_top = -0.0507757
 anchor_right = 1.05354
 anchor_bottom = 1.0
-offset_left = -669.932
-offset_top = -324.05
-offset_right = -669.932
-offset_bottom = -324.05
+offset_left = -3264.49
+offset_top = -389.648
+offset_right = -3264.49
+offset_bottom = -389.648
 grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.318964, 0.295939, 0.29562, 0.596078)
@@ -93,7 +93,6 @@ layout_mode = 2
 theme_override_fonts/font = ExtResource("1_lti8b")
 theme_override_font_sizes/font_size = 24
 placeholder_text = "Enter IP Address (default: localhost)"
-text = "localhost"
 
 [node name="StatsButton" type="Button" parent="CenterContainer/VBoxContainer/ButtonContainer"]
 custom_minimum_size = Vector2(280, 80)

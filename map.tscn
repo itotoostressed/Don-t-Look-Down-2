@@ -64,3 +64,5 @@ spawn_limit = 1000
 _spawnable_scenes = PackedStringArray("uid://cuofobr4mhqoo")
 spawn_path = NodePath("..")
 spawn_limit = 1000
+
+[node name="AudioStreamPlayer3D" type="AudioStreamPlayer3D" parent="."]

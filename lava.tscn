@@ -1,9 +1,12 @@
-[gd_scene load_steps=5 format=3 uid="uid://bvlk4d4fpxgw2"]
+[gd_scene load_steps=6 format=3 uid="uid://bvlk4d4fpxgw2"]
 
 [ext_resource type="Script" uid="uid://dm1yf4ip44ngj" path="res://lava.gd" id="1_34hvj"]
+[ext_resource type="Texture2D" uid="uid://b28uauwss6d67" path="res://lava.png" id="2_gil3p"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_34hvj"]
-albedo_color = Color(0.861051, 0.280079, 0.206646, 1)
+albedo_texture = ExtResource("2_gil3p")
+uv1_scale = Vector3(40, 40, 40)
+uv1_triplanar = true
 
 [sub_resource type="BoxMesh" id="BoxMesh_34hvj"]
 

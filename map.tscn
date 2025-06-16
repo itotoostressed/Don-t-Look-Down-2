@@ -1,9 +1,11 @@
-[gd_scene load_steps=10 format=3 uid="uid://dpq6nfagtjfj7"]
+[gd_scene load_steps=13 format=3 uid="uid://dpq6nfagtjfj7"]
 
 [ext_resource type="Script" uid="uid://d3lf7x15q50wu" path="res://map.gd" id="1_p5pve"]
 [ext_resource type="Texture2D" uid="uid://dsx68i3hh0bnk" path="res://696.jpg" id="2_e0an3"]
 [ext_resource type="PackedScene" uid="uid://uqx4nqtnn532" path="res://platform.tscn" id="2_p5pve"]
 [ext_resource type="PackedScene" uid="uid://bvlk4d4fpxgw2" path="res://lava.tscn" id="5_urblq"]
+[ext_resource type="AudioStream" uid="uid://dse4ojyhjnwwn" path="res://gameTrack.mp3" id="6_iw27f"]
+[ext_resource type="PackedScene" uid="uid://cs3caxs4akva2" path="res://hellscape.tscn" id="7_71pa8"]
 [ext_resource type="PackedScene" uid="uid://iv0otnf28rgx" path="res://stats.tscn" id="7_xxxxx"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_p5pve"]
@@ -22,6 +24,9 @@ glow_enabled = true
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_71pa8"]
 albedo_texture = ExtResource("2_e0an3")
 uv1_triplanar = true
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_05x41"]
+size = Vector3(130, 1000, 1)
 
 [node name="Map" type="Node3D"]
 script = ExtResource("1_p5pve")
@@ -66,3 +71,23 @@ spawn_path = NodePath("..")
 spawn_limit = 1000
 
 [node name="AudioStreamPlayer3D" type="AudioStreamPlayer3D" parent="."]
+stream = ExtResource("6_iw27f")
+
+[node name="Sketchfab_Scene" parent="." instance=ExtResource("7_71pa8")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -130.729, 142.266, 3468.8)
+
+[node name="Wall1" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 301.958, -61.1855)
+shape = SubResource("BoxShape3D_05x41")
+
+[node name="Wall2" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 301.958, 58.6286)
+shape = SubResource("BoxShape3D_05x41")
+
+[node name="Wall3" type="CollisionShape3D" parent="."]
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, 55.1562, 301.958, -2.69811)
+shape = SubResource("BoxShape3D_05x41")
+
+[node name="Wall4" type="CollisionShape3D" parent="."]
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, -59.7711, 301.958, -2.69811)
+shape = SubResource("BoxShape3D_05x41")

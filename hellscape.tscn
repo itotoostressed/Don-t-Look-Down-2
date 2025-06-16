@@ -1,0 +1,5 @@
+[gd_scene load_steps=2 format=3 uid="uid://cs3caxs4akva2"]
+
+[ext_resource type="PackedScene" uid="uid://bl4fougfy13tp" path="res://hellscape.glb" id="1_3wajt"]
+
+[node name="Sketchfab_Scene" instance=ExtResource("1_3wajt")]

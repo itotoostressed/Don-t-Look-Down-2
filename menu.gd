@@ -6,9 +6,15 @@ extends Control
 @onready var start_button = $CenterContainer/VBoxContainer/ButtonContainer/StartButton
 @onready var host_button = $CenterContainer/VBoxContainer/ButtonContainer/HostButton
 @onready var join_button = $CenterContainer/VBoxContainer/ButtonContainer/JoinButton
-@onready var ip_input = $CenterContainer/VBoxContainer/ButtonContainer/IPInput
+@onready var host_ip_panel = $CenterContainer/VBoxContainer/ButtonContainer/HostButton/HostIPPanel
+@onready var join_ip_panel = $CenterContainer/VBoxContainer/ButtonContainer/JoinButton/JoinIPPanel
+@onready var host_ip_input = $CenterContainer/VBoxContainer/ButtonContainer/HostButton/HostIPPanel/VBoxContainer/IPInput
+@onready var join_ip_input = $CenterContainer/VBoxContainer/ButtonContainer/JoinButton/JoinIPPanel/VBoxContainer/IPInput
+@onready var host_connect_button = $CenterContainer/VBoxContainer/ButtonContainer/HostButton/HostIPPanel/VBoxContainer/ConnectButton
+@onready var join_connect_button = $CenterContainer/VBoxContainer/ButtonContainer/JoinButton/JoinIPPanel/VBoxContainer/ConnectButton
 
 var is_connecting = false
+var is_hosting = false
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
@@ -20,9 +26,13 @@ func _ready() -> void:
 	stats_button.pressed.connect(_on_stats_button_pressed)
 	host_button.pressed.connect(_on_host_button_pressed)
 	join_button.pressed.connect(_on_join_button_pressed)
+	host_connect_button.pressed.connect(_on_host_connect_pressed)
+	join_connect_button.pressed.connect(_on_join_connect_pressed)
 	
-	# Initially hide the stats panel
+	# Initially hide the panels
 	stats_panel.visible = false
+	host_ip_panel.visible = false
+	join_ip_panel.visible = false
 	
 	# Connect to stats update signal
 	var stats = get_node("/root/Stats")
@@ -66,29 +76,64 @@ func _on_host_button_pressed() -> void:
 	if is_connecting:
 		return
 		
-	is_connecting = true
-	
-	# Start as host
-	hide()  # Hide menu
-	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)  # Capture mouse for game
-	get_node("/root/NetworkHandler").start_host()
-	is_connecting = false
+	# Hide join panel if visible
+	join_ip_panel.visible = false
+	# Show host panel
+	host_ip_panel.visible = true
 
 func _on_join_button_pressed() -> void:
+	if is_connecting:
+		return
+		
+	# Hide host panel if visible
+	host_ip_panel.visible = false
+	# Show join panel
+	join_ip_panel.visible = true
+
+func _on_host_connect_pressed() -> void:
 	if is_connecting:
 		return
 		
 	is_connecting = true
 	
 	# Get IP from input field
-	var ip = ip_input.text.strip_edges()
+	var ip = host_ip_input.text.strip_edges()
 	if ip.is_empty():
 		ip = "localhost"
 	
+	# Hide the IP input panel
+	host_ip_panel.visible = false
+	
+	# Hide menu
+	hide()
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	
+	# Start as host
+	get_node("/root/NetworkHandler").start_host()
+	
+	is_connecting = false
+
+func _on_join_connect_pressed() -> void:
+	if is_connecting:
+		return
+		
+	is_connecting = true
+	
+	# Get IP from input field
+	var ip = join_ip_input.text.strip_edges()
+	if ip.is_empty():
+		ip = "localhost"
+	
+	# Hide the IP input panel
+	join_ip_panel.visible = false
+	
+	# Hide menu
+	hide()
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	
 	# Join as client
-	hide()  # Hide menu
-	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)  # Capture mouse for game
 	get_node("/root/NetworkHandler").start_client(ip)
+	
 	is_connecting = false
 
 func _on_stats_updated() -> void:

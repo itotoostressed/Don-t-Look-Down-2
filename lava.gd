@@ -18,11 +18,15 @@ func _process(delta: float) -> void:
 	if is_rising:
 		global_position.y += .1
 
+@rpc("any_peer", "call_local")
 func rise():
 	is_rising = true
 
 func start_rising():
-	is_rising = true
+	if multiplayer.is_server():
+		rise.rpc()  # Server broadcasts to all clients
+	else:
+		rise()  # Client calls locally
 
 func _on_body_entered(body: Node3D) -> void:
 	if body and body.is_in_group("players"):

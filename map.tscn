@@ -52,7 +52,7 @@ size = Vector3(1, 0.001, 1)
 material = SubResource("StandardMaterial3D_71pa8")
 
 [node name="lava" parent="." instance=ExtResource("5_urblq")]
-transform = Transform3D(2.5259, 0, 0, 0, 2.5259, 0, 0, 0, 2.5259, 0, -157.905, 0)
+transform = Transform3D(2.5259, 0, 0, 0, 2.5259, 0, 0, 0, 2.5259, 0, -118.204, 0)
 
 [node name="Stats" parent="." instance=ExtResource("7_xxxxx")]
 

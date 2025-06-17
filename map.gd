@@ -615,11 +615,6 @@ func _spawn_ladder(data):
 	ladder.rotation = data.rotation
 	return ladder
 
-func _spawn_lava(data):
-	var lava = lava_scene.instantiate()
-	lava.position = data.position
-	return lava
-
 func _process(delta: float) -> void:
 	if visible:  # Only check win condition if world is visible
 		#print("Map: _process called, world is visible")

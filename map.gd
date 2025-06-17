@@ -304,6 +304,8 @@ func start_multiplayer_client():
 	visible = true
 	is_client = true
 	
+	$lava.rise()
+	
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	
 	# Make sure the world is visible
@@ -789,3 +791,6 @@ func receive_world_data(platform_data, ladder_data):
 			ladder.scale = data.scale
 	
 	print("Map: World replication complete - Created ", platform_data.size(), " platforms and ", ladder_data.size(), " ladders")
+
+func client_lava_rise():
+	$lava.rise()

@@ -116,7 +116,7 @@ func _on_host_connect_pressed() -> void:
 func _on_join_connect_pressed() -> void:
 	if is_connecting:
 		return
-		
+
 	is_connecting = true
 	
 	# Get IP from input field

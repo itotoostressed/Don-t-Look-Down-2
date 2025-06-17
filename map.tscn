@@ -71,6 +71,11 @@ _spawnable_scenes = PackedStringArray("uid://cuofobr4mhqoo")
 spawn_path = NodePath("..")
 spawn_limit = 1000
 
+[node name="MultiplayerSpawner4" type="MultiplayerSpawner" parent="."]
+_spawnable_scenes = PackedStringArray("uid://bvlk4d4fpxgw2")
+spawn_path = NodePath("..")
+spawn_limit = 1
+
 [node name="Gametrack" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("6_iw27f")
 

@@ -228,12 +228,6 @@ func start_single_player():
 	await get_tree().create_timer(0.1).timeout
 	generate_ladders_single_player()
 	
-	# Spawn lava
-	var lava = lava_scene.instantiate()
-	lava.position = Vector3(0, -118.204, 0)
-	add_child(lava)
-	lava.call_deferred("rise")
-	
 	# Create and set up single player
 	print("Map: Creating single player")
 	var single_player = player_scene.instantiate()

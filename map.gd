@@ -46,7 +46,6 @@ func _ready():
 	# Set up spawn functions for the spawners
 	$MultiplayerSpawner2.spawn_function = _spawn_platform
 	$MultiplayerSpawner3.spawn_function = _spawn_ladder
-	$MultiplayerSpawner4.spawn_function = _spawn_lava
 	
 	# Connect multiplayer signals (only once)
 	if not multiplayer.peer_connected.is_connected(_on_peer_connected):
@@ -274,9 +273,6 @@ func start_multiplayer_host():
 	await get_tree().create_timer(0.1).timeout
 	generate_ladders()
 	
-	# Spawn lava
-	$MultiplayerSpawner4.spawn({"position": Vector3(0, -118.204, 0)})
-	
 	# Create and set up host player
 	print("Map: Creating host player")
 	var host_player = player_scene.instantiate()
@@ -386,13 +382,17 @@ func _on_peer_connected(id: int):
 	if multiplayer.is_server():
 		print("Map: Server received new peer connection: ", id)
 		# Spawn the player for the new peer
-		$MultiplayerSpawner.spawn({"id": id})
+		if has_node("MultiplayerSpawner"):
+			$MultiplayerSpawner.spawn({"id": id})
+		
 		# Start the lava rising when first client joins
 		var lava = get_node_or_null("lava")
-		if lava:
-			lava.call_deferred("rise")
+		if lava and is_instance_valid(lava):
+			lava.start_rising()  # This will handle both server and client
+		
 		# Send world data to the new client
-		rpc_id(id, "receive_world_data", get_platform_data(), get_ladder_data())
+		if has_node("World/Platforms") and has_node("World/Ladders"):
+			rpc_id(id, "receive_world_data", get_platform_data(), get_ladder_data())
 
 func _on_peer_disconnected(id: int):
 	print("Map: Peer disconnected signal received for ID: ", id)

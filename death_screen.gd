@@ -1,12 +1,14 @@
 extends Control
 @onready var map = preload("res://map.tscn")
 @onready var stats_label = $CenterContainer/VBoxContainer/StatsLabel
-
+@onready var deathtrack = $deathtrack
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	# Show the cursor and enable input processing
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	set_process_input(true)
+	
+	deathtrack.play()
 	
 	# Connect the button's pressed signal to our handler
 	$CenterContainer/VBoxContainer/Button.pressed.connect(_on_return_button_pressed)

@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://c8q6vxqnxv4j2"]
+[gd_scene load_steps=4 format=3 uid="uid://c8q6vxqnxv4j2"]
 
-[ext_resource type="Script" path="res://death_screen.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://dlruyboq1bs25" path="res://death_screen.gd" id="1_script"]
 [ext_resource type="FontFile" uid="uid://y4tedhsaq5ma" path="res://Minercraftory.ttf" id="2_font"]
+[ext_resource type="AudioStream" uid="uid://ch4soaream1tv" path="res://lavaDeath.mp3" id="3_6bi5g"]
 
 [node name="DeathScreen" type="Control"]
 layout_mode = 3
@@ -29,11 +30,9 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 1
 
 [node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
 layout_mode = 2
-mouse_filter = 1
 theme_override_constants/separation = 20
 
 [node name="Label" type="Label" parent="CenterContainer/VBoxContainer"]
@@ -58,3 +57,7 @@ layout_mode = 2
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 27
 text = "Return to Menu"
+
+[node name="deathtrack" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("3_6bi5g")
+volume_db = -5.0

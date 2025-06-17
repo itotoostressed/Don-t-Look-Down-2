@@ -3,6 +3,16 @@ extends Area3D
 var yPos = 0
 var is_rising = false
 
+@onready var mesh = $MeshInstance3D
+
+func _ready():
+	# Make sure the mesh is visible
+	if mesh:
+		mesh.visible = true
+	# Set up multiplayer synchronization
+	if multiplayer.multiplayer_peer != null:
+		set_multiplayer_authority(1)  # Server owns the lava
+
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta: float) -> void:
 	if is_rising:

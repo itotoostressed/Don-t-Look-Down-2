@@ -11,6 +11,7 @@ var player = null  # Remove @onready and initialize as null
 var platformScene = preload("res://platform.tscn")
 var ladderScene = preload("res://ladder.tscn") # Make sure to load your ladder scene
 var player_scene = preload("res://player.tscn")
+var lava_scene = preload("res://lava.tscn")
 
 # Configuration variables
 var platform_count = 30
@@ -45,6 +46,7 @@ func _ready():
 	# Set up spawn functions for the spawners
 	$MultiplayerSpawner2.spawn_function = _spawn_platform
 	$MultiplayerSpawner3.spawn_function = _spawn_ladder
+	$MultiplayerSpawner4.spawn_function = _spawn_lava
 	
 	# Connect multiplayer signals (only once)
 	if not multiplayer.peer_connected.is_connected(_on_peer_connected):
@@ -227,8 +229,11 @@ func start_single_player():
 	await get_tree().create_timer(0.1).timeout
 	generate_ladders_single_player()
 	
-	# Start lava rising in single player
-	$lava.call_deferred("rise")
+	# Spawn lava
+	var lava = lava_scene.instantiate()
+	lava.position = Vector3(0, -118.204, 0)
+	add_child(lava)
+	lava.call_deferred("rise")
 	
 	# Create and set up single player
 	print("Map: Creating single player")
@@ -268,6 +273,9 @@ func start_multiplayer_host():
 	generate_platforms()
 	await get_tree().create_timer(0.1).timeout
 	generate_ladders()
+	
+	# Spawn lava
+	$MultiplayerSpawner4.spawn({"position": Vector3(0, -118.204, 0)})
 	
 	# Create and set up host player
 	print("Map: Creating host player")
@@ -380,7 +388,9 @@ func _on_peer_connected(id: int):
 		# Spawn the player for the new peer
 		$MultiplayerSpawner.spawn({"id": id})
 		# Start the lava rising when first client joins
-		$lava.call_deferred("rise")
+		var lava = get_node_or_null("lava")
+		if lava:
+			lava.call_deferred("rise")
 		# Send world data to the new client
 		rpc_id(id, "receive_world_data", get_platform_data(), get_ladder_data())
 
@@ -604,6 +614,11 @@ func _spawn_ladder(data):
 	ladder.position = data.position
 	ladder.rotation = data.rotation
 	return ladder
+
+func _spawn_lava(data):
+	var lava = lava_scene.instantiate()
+	lava.position = data.position
+	return lava
 
 func _process(delta: float) -> void:
 	if visible:  # Only check win condition if world is visible
